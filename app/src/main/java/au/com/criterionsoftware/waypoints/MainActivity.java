@@ -3,19 +3,16 @@ package au.com.criterionsoftware.waypoints;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 
 public class MainActivity extends AppCompatActivity {
 
 	private final String LOG_TAG = MainActivity.class.getSimpleName();
 
-	private MapsHandler mapsHandler;
+	private MapHandler mapHandler;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -25,12 +22,14 @@ public class MainActivity extends AppCompatActivity {
 		Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
 		setSupportActionBar(myToolbar);
 
-		mapsHandler = new MapsHandler();
+		mapHandler = new MapHandler();
+
+		mapHandler.restoreState(savedInstanceState);
 
 		// Obtain the SupportMapFragment and get notified when the map is ready to be used.
 		SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.map);
-		mapFragment.getMapAsync(mapsHandler);
+		mapFragment.getMapAsync(mapHandler);
 	}
 
 	@Override
@@ -45,10 +44,18 @@ public class MainActivity extends AppCompatActivity {
 
 		switch (id) {
 			case R.id.toggle_map:
-				Log.d(LOG_TAG, "Toggle Map");
+				mapHandler.toggleMapDisplay();
 				break;
 		}
 
 		return super.onOptionsItemSelected(item);
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+
+		mapHandler.saveState(outState);
+
+		super.onSaveInstanceState(outState);
 	}
 }
