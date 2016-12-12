@@ -1,5 +1,6 @@
 package au.com.criterionsoftware.waypoints;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -16,17 +17,20 @@ public class MainActivity extends AppCompatActivity {
 	private final String LOG_TAG = MainActivity.class.getSimpleName();
 
 	private MapHandler mapHandler;
+	private WaypointStore waypointStore;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		Toolbar myToolbar = (Toolbar) findViewById(R.id.my_toolbar);
-		setSupportActionBar(myToolbar);
+		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+		setSupportActionBar(toolbar);
 
-		mapHandler = new MapHandler();
+		waypointStore = new WaypointStore();
+		mapHandler = new MapHandler(this, waypointStore);
 
+		waypointStore.restoreState(savedInstanceState);
 		mapHandler.restoreState(savedInstanceState);
 
 		// Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -50,8 +54,8 @@ public class MainActivity extends AppCompatActivity {
 				mapHandler.toggleMapDisplay();
 				break;
 
-			case R.id.show_waypoints:
-				showWaypoints();
+			case R.id.edit_waypoints:
+				editWaypoints();
 				break;
 		}
 
@@ -62,15 +66,18 @@ public class MainActivity extends AppCompatActivity {
 	protected void onSaveInstanceState(Bundle outState) {
 
 		mapHandler.saveState(outState);
+		waypointStore.saveState(outState);
 
 		super.onSaveInstanceState(outState);
 	}
 
-	private void showWaypoints() {
-		ArrayList<String> waypoints = mapHandler.getWaypointList();
+	private void editWaypoints() {
+		Intent intent = new Intent(this, WaypointsActivity.class);
 
-		for (String s : waypoints) {
-			Log.d(LOG_TAG, s);
-		}
+		Bundle bundle = new Bundle();
+		waypointStore.saveState(bundle);
+		intent.putExtra(WaypointsActivity.EXTRA_WAYPOINTS, bundle);
+
+		startActivityForResult(intent, 0);
 	}
 }

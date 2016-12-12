@@ -1,20 +1,21 @@
 package au.com.criterionsoftware.waypoints;
 
+import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.UrlTileProvider;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Locale;
 
 /**
@@ -28,6 +29,9 @@ class MapHandler implements OnMapReadyCallback {
 	private static final String MAP_MODE_KEY = "mapMode";
 	private static final String STAMEN_BASE_URL = "http://tile.stamen.com/watercolor/%d/%d/%d.jpg";
 
+	private Context context;
+	private WaypointStore waypointStore;
+
 	private GoogleMap theMap;
 	private TileOverlay tileOverlay;
 
@@ -37,10 +41,9 @@ class MapHandler implements OnMapReadyCallback {
 
 	private MapMode mapMode;
 
-	private ArrayList<LatLng> waypoints;
-
-	MapHandler() {
-		waypoints = new ArrayList<>();
+	MapHandler(Context context, WaypointStore waypointStore) {
+		this.context = context;
+		this.waypointStore = waypointStore;
 	}
 
 	@Override
@@ -51,14 +54,13 @@ class MapHandler implements OnMapReadyCallback {
 		}
 
 		// Add a marker in Sydney and move the camera
-		LatLng sydney = new LatLng(-34, 151);
-		theMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-		theMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+		LatLng adl = new LatLng(-34.9285, 138.6007);
+		theMap.moveCamera(CameraUpdateFactory.newLatLngZoom(adl, 9.0f));
 
 		theMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
 			@Override
 			public void onMapClick(LatLng latLng) {
-				waypoints.add(latLng);
+				confirmAddWaypoint(latLng);
 			}
 		});
 
@@ -99,15 +101,20 @@ class MapHandler implements OnMapReadyCallback {
 		}
 	}
 
-	ArrayList<String> getWaypointList() {
-		ArrayList<String> results = new ArrayList<>();
-		int i = 1;
+	private void confirmAddWaypoint(final LatLng latLng) {
 
-		for (LatLng latLng : waypoints) {
-			results.add(String.format(Locale.getDefault(), "%d. %f, %f", i++, latLng.latitude, latLng.longitude));
-		}
+		String title = "Confirm Action";
+		String message = String.format(Locale.getDefault(), "Do you wish to add the following waypoint?\r\nLat: %f\r\nLng: %f", latLng.latitude, latLng.longitude);
 
-		return results;
+		new AlertDialog.Builder(context)
+				.setTitle(title)
+				.setMessage(message)
+				.setIcon(android.R.drawable.ic_dialog_alert)
+				.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog, int whichButton) {
+						waypointStore.addWaypoint(latLng);
+					}})
+				.setNegativeButton(android.R.string.no, null).show();
 	}
 
 	private void switchToStamenMap() {

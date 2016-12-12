@@ -7,8 +7,8 @@
 	      android:icon="@android:drawable/ic_menu_mapmode"
 	      app:showAsAction="ifRoom"/>
 
-	<item android:title="@string/show_waypoints"
-	      android:id="@+id/show_waypoints"
+	<item android:title="@string/edit_waypoints"
+	      android:id="@+id/edit_waypoints"
 	      android:icon="@android:drawable/ic_menu_compass"
 	      app:showAsAction="ifRoom"/>
 </menu>
