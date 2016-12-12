@@ -3,10 +3,13 @@ package au.com.criterionsoftware.waypoints;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.google.android.gms.maps.SupportMapFragment;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,6 +49,10 @@ public class MainActivity extends AppCompatActivity {
 			case R.id.toggle_map:
 				mapHandler.toggleMapDisplay();
 				break;
+
+			case R.id.show_waypoints:
+				showWaypoints();
+				break;
 		}
 
 		return super.onOptionsItemSelected(item);
@@ -57,5 +64,13 @@ public class MainActivity extends AppCompatActivity {
 		mapHandler.saveState(outState);
 
 		super.onSaveInstanceState(outState);
+	}
+
+	private void showWaypoints() {
+		ArrayList<String> waypoints = mapHandler.getWaypointList();
+
+		for (String s : waypoints) {
+			Log.d(LOG_TAG, s);
+		}
 	}
 }

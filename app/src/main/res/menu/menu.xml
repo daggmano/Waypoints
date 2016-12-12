@@ -6,4 +6,9 @@
 	      android:id="@+id/toggle_map"
 	      android:icon="@android:drawable/ic_menu_mapmode"
 	      app:showAsAction="ifRoom"/>
+
+	<item android:title="@string/show_waypoints"
+	      android:id="@+id/show_waypoints"
+	      android:icon="@android:drawable/ic_menu_compass"
+	      app:showAsAction="ifRoom"/>
 </menu>

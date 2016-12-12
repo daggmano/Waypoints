@@ -14,13 +14,14 @@ import com.google.android.gms.maps.model.UrlTileProvider;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Locale;
 
 /**
  * Created by darrenoster on 12/12/16.
  */
 
-public class MapHandler implements OnMapReadyCallback {
+class MapHandler implements OnMapReadyCallback {
 
 	private static final String LOG_TAG = MapHandler.class.getSimpleName();
 
@@ -35,6 +36,12 @@ public class MapHandler implements OnMapReadyCallback {
 	}
 
 	private MapMode mapMode;
+
+	private ArrayList<LatLng> waypoints;
+
+	MapHandler() {
+		waypoints = new ArrayList<>();
+	}
 
 	@Override
 	public void onMapReady(GoogleMap googleMap) {
@@ -51,7 +58,7 @@ public class MapHandler implements OnMapReadyCallback {
 		theMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
 			@Override
 			public void onMapClick(LatLng latLng) {
-				Log.d(LOG_TAG, "Click!");
+				waypoints.add(latLng);
 			}
 		});
 
@@ -90,6 +97,17 @@ public class MapHandler implements OnMapReadyCallback {
 		if (bundle != null && bundle.containsKey(MAP_MODE_KEY)) {
 			mapMode = (MapMode) bundle.get(MAP_MODE_KEY);
 		}
+	}
+
+	ArrayList<String> getWaypointList() {
+		ArrayList<String> results = new ArrayList<>();
+		int i = 1;
+
+		for (LatLng latLng : waypoints) {
+			results.add(String.format(Locale.getDefault(), "%d. %f, %f", i++, latLng.latitude, latLng.longitude));
+		}
+
+		return results;
 	}
 
 	private void switchToStamenMap() {
