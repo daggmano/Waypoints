@@ -32,13 +32,12 @@ public class MainActivity extends AppCompatActivity {
 		waypointStore = new WaypointStore();
 		mapHandler = new MapHandler(this, waypointStore);
 
+		// Obtain the SupportMapFragment and get notified when the map is ready to be used.
+		SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+		mapFragment.getMapAsync(mapHandler);
+
 		waypointStore.restoreState(savedInstanceState);
 		mapHandler.restoreState(savedInstanceState);
-
-		// Obtain the SupportMapFragment and get notified when the map is ready to be used.
-		SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-				.findFragmentById(R.id.map);
-		mapFragment.getMapAsync(mapHandler);
 	}
 
 	@Override

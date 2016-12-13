@@ -54,9 +54,6 @@ class MapHandler implements OnMapReadyCallback {
 	@Override
 	public void onMapReady(GoogleMap googleMap) {
 		theMap = googleMap;
-		if (mapMode == MapMode.STAMEN) {
-			switchToStamenMap();
-		}
 
 		// Add a marker in Sydney and move the camera
 		LatLng adl = new LatLng(-34.9285, 138.6007);
@@ -75,6 +72,10 @@ class MapHandler implements OnMapReadyCallback {
 				Log.d(LOG_TAG, "Long click!");
 			}
 		});
+
+		if (mapMode == MapMode.STAMEN) {
+			switchToStamenMap();
+		}
 
 		redrawWaypoints();
 	}
@@ -164,7 +165,9 @@ class MapHandler implements OnMapReadyCallback {
 	}
 
 	void redrawWaypoints() {
-		theMap.clear();
+		if (polyline != null) {
+			polyline.remove();
+		}
 
 		PolylineOptions options = new PolylineOptions().color(Color.RED);
 		for (LatLng latLng : waypointStore.getWaypoints()) {
