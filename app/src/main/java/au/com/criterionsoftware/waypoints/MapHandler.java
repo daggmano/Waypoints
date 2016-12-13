@@ -31,6 +31,11 @@ import java.util.Locale;
  * Created by darrenoster on 12/12/16.
  */
 
+interface OnShowWaypointDetail {
+	void onShowWaypointDetail(int index, LatLng latLng);
+	boolean clearWaypointDetail();
+}
+
 class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
 	private static final String LOG_TAG = MapHandler.class.getSimpleName();
@@ -44,6 +49,8 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener 
 	private GoogleMap theMap;
 	private TileOverlay tileOverlay;
 
+	private OnShowWaypointDetail onShowWaypointDetailHolder;
+
 	private enum MapMode {
 		GOOGLE, STAMEN
 	}
@@ -53,9 +60,10 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener 
 	private Polyline polyline;
 	private Marker mapPoints[];
 
-	MapHandler(Context context, WaypointStore waypointStore) {
+	MapHandler(Context context, WaypointStore waypointStore, OnShowWaypointDetail holder) {
 		this.context = context;
 		this.waypointStore = waypointStore;
+		this.onShowWaypointDetailHolder = holder;
 	}
 
 	@Override
@@ -69,7 +77,9 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener 
 		theMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
 			@Override
 			public void onMapClick(LatLng latLng) {
-				confirmAddWaypoint(latLng);
+				if (!onShowWaypointDetailHolder.clearWaypointDetail()) {
+					confirmAddWaypoint(latLng);
+				}
 			}
 		});
 
@@ -218,7 +228,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener 
 	public boolean onMarkerClick(Marker marker) {
 		int i = (int) marker.getTag();
 
-		Log.d(LOG_TAG, "Clicked marker at " + waypointStore.getWaypointsArray()[i]);
+		onShowWaypointDetailHolder.onShowWaypointDetail(i, waypointStore.getWaypointsArray()[i]);
 		return true;
 	}
 }

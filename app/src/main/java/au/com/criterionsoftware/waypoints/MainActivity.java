@@ -3,16 +3,22 @@ package au.com.criterionsoftware.waypoints;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnShowWaypointDetail {
 
 	private final String LOG_TAG = MainActivity.class.getSimpleName();
 
@@ -20,6 +26,13 @@ public class MainActivity extends AppCompatActivity {
 
 	private MapHandler mapHandler;
 	private WaypointStore waypointStore;
+
+	private CardView waypointInfoCard;
+	private TextView waypointInfoTitle;
+	private TextView waypointInfoDetail;
+	private Button waypointInfoDelete;
+
+	private int waypointInfoIndex;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -29,8 +42,27 @@ public class MainActivity extends AppCompatActivity {
 		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 
+		waypointInfoIndex = -1;
+
+		waypointInfoCard = (CardView) findViewById(R.id.waypoint_info_card);
+		waypointInfoTitle = (TextView) findViewById(R.id.waypoint_info_title);
+		waypointInfoDetail = (TextView) findViewById(R.id.waypoint_info_detail);
+		waypointInfoDelete = (Button) findViewById(R.id.waypoint_info_delete);
+
+		waypointInfoDelete.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				if (waypointInfoIndex > -1) {
+					waypointInfoCard.setVisibility(View.GONE);
+					waypointStore.removeWaypointAt(waypointInfoIndex);
+					mapHandler.redrawWaypoints();
+					waypointInfoIndex = -1;
+				}
+			}
+		});
+
 		waypointStore = new WaypointStore();
-		mapHandler = new MapHandler(this, waypointStore);
+		mapHandler = new MapHandler(this, waypointStore, this);
 
 		// Obtain the SupportMapFragment and get notified when the map is ready to be used.
 		SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -90,6 +122,25 @@ public class MainActivity extends AppCompatActivity {
 				waypointStore.restoreState(bundle);
 				mapHandler.redrawWaypoints();
 			}
+		}
+	}
+
+	@Override
+	public void onShowWaypointDetail(int index, LatLng latLng) {
+		waypointInfoIndex = index;
+		waypointInfoTitle.setText(String.format(Locale.getDefault(), "WAYPOINT %d", (index + 1)));
+		waypointInfoDetail.setText(String.format(Locale.getDefault(), "Lat / Lng: %f / %f", latLng.latitude, latLng.longitude));
+		waypointInfoCard.setVisibility(View.VISIBLE);
+	}
+
+	@Override
+	public boolean clearWaypointDetail() {
+		if (waypointInfoCard.getVisibility() == View.VISIBLE) {
+			waypointInfoCard.setVisibility(View.GONE);
+			waypointInfoIndex = -1;
+			return true;
+		} else {
+			return false;
 		}
 	}
 }

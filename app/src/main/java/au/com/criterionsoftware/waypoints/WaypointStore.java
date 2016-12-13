@@ -37,7 +37,11 @@ public class WaypointStore {
 		}
 	}
 
-	public LatLng[] getWaypointsArray() {
+	void removeWaypointAt(int index) {
+		waypoints.remove(index);
+	}
+
+	LatLng[] getWaypointsArray() {
 		LatLng[] result = new LatLng[waypoints.size()];
 		return waypoints.toArray(result);
 	}

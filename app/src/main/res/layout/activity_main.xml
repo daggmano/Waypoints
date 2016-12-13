@@ -23,21 +23,55 @@
 	          android:layout_height="match_parent"
 	          tools:context=".MainActivity"/>
 
-	<LinearLayout
+	<android.support.v7.widget.CardView
+		android:id="@+id/waypoint_info_card"
+		android:visibility="gone"
 		android:layout_below="@+id/toolbar"
 		android:layout_marginTop="16dp"
 		android:layout_marginLeft="16dp"
 		android:layout_marginStart="16dp"
-		android:background="@color/cardview_dark_background"
+		app:cardBackgroundColor="@color/cardview_dark_background"
+		app:cardCornerRadius="4dp"
+		app:cardElevation="4dp"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content">
 
-		<TextView
-			android:text="Hello World"
-			android:textColor="@android:color/white"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content"/>
+		<LinearLayout
+			android:orientation="vertical"
+			android:layout_margin="8dp"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content">
 
-	</LinearLayout>
+			<TextView
+				android:id="@+id/waypoint_info_title"
+				android:text=""
+				android:textColor="@android:color/white"
+				android:textStyle="bold"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"/>
+
+			<TextView
+				android:id="@+id/waypoint_info_detail"
+				android:text=""
+				android:textColor="@android:color/white"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"/>
+
+			<Button
+				android:id="@+id/waypoint_info_delete"
+				android:background="@android:color/holo_red_dark"
+				android:textColor="@android:color/white"
+				android:layout_marginTop="4dp"
+				android:padding="2dp"
+				android:text="@string/remove"
+				android:drawableLeft="@drawable/ic_delete_white"
+				android:drawableStart="@drawable/ic_delete_white"
+				android:layout_gravity="end"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"/>
+
+		</LinearLayout>
+
+	</android.support.v7.widget.CardView>
 
 </RelativeLayout>
