@@ -10,7 +10,13 @@ import android.util.Log;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Circle;
+import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.TileOverlay;
@@ -25,7 +31,7 @@ import java.util.Locale;
  * Created by darrenoster on 12/12/16.
  */
 
-class MapHandler implements OnMapReadyCallback {
+class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
 	private static final String LOG_TAG = MapHandler.class.getSimpleName();
 
@@ -45,6 +51,7 @@ class MapHandler implements OnMapReadyCallback {
 	private MapMode mapMode;
 
 	private Polyline polyline;
+	private Marker mapPoints[];
 
 	MapHandler(Context context, WaypointStore waypointStore) {
 		this.context = context;
@@ -72,6 +79,8 @@ class MapHandler implements OnMapReadyCallback {
 				Log.d(LOG_TAG, "Long click!");
 			}
 		});
+
+		theMap.setOnMarkerClickListener(this);
 
 		if (mapMode == MapMode.STAMEN) {
 			switchToStamenMap();
@@ -169,12 +178,47 @@ class MapHandler implements OnMapReadyCallback {
 			polyline.remove();
 		}
 
-		PolylineOptions options = new PolylineOptions().color(Color.RED);
-		for (LatLng latLng : waypointStore.getWaypoints()) {
+		if (mapPoints != null) {
+			for (Marker m : mapPoints) {
+				m.remove();
+			}
+		}
+
+		LatLng[] waypoints = waypointStore.getWaypointsArray();
+
+		mapPoints = new Marker[waypoints.length];
+
+		PolylineOptions options = new PolylineOptions().color(Color.BLUE);
+		int i = 0;
+		for (LatLng latLng : waypoints) {
 			options.add(latLng);
+
+			float markerColor = i == 0
+					? BitmapDescriptorFactory.HUE_GREEN
+					: i == waypoints.length - 1
+						? BitmapDescriptorFactory.HUE_RED
+						: BitmapDescriptorFactory.HUE_BLUE;
+
+
+			MarkerOptions mo = new MarkerOptions()
+					.position(latLng)
+					.icon(BitmapDescriptorFactory.defaultMarker(markerColor));
+
+			Marker m = theMap.addMarker(mo);
+			m.setTag(i);
+
+			mapPoints[i++] = m;
 		}
 
 		polyline = theMap.addPolyline(options);
 		polyline.setZIndex(1000);
+	}
+
+	@Override
+	public boolean onMarkerClick(Marker marker) {
+		int i = (int) marker.getTag();
+
+		Log.d(LOG_TAG, "Clicked marker at " + waypointStore.getWaypointsArray()[i]);
+		return true;
 	}
 }

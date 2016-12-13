@@ -37,7 +37,8 @@ public class WaypointStore {
 		}
 	}
 
-	public ArrayList<LatLng> getWaypoints() {
-		return waypoints;
+	public LatLng[] getWaypointsArray() {
+		LatLng[] result = new LatLng[waypoints.size()];
+		return waypoints.toArray(result);
 	}
 }

@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
 			if (resultCode == RESULT_OK) {
 				Bundle bundle = data.getBundleExtra(WaypointsActivity.EXTRA_WAYPOINTS);
 				waypointStore.restoreState(bundle);
+				mapHandler.redrawWaypoints();
 			}
 		}
 	}
