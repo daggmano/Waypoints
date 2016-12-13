@@ -36,4 +36,8 @@ public class WaypointStore {
 			waypoints = bundle.getParcelableArrayList(WAYPOINT_KEY);
 		}
 	}
+
+	public ArrayList<LatLng> getWaypoints() {
+		return waypoints;
+	}
 }

@@ -2,6 +2,7 @@ package au.com.criterionsoftware.waypoints;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
@@ -10,6 +11,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.UrlTileProvider;
@@ -41,6 +44,8 @@ class MapHandler implements OnMapReadyCallback {
 
 	private MapMode mapMode;
 
+	private Polyline polyline;
+
 	MapHandler(Context context, WaypointStore waypointStore) {
 		this.context = context;
 		this.waypointStore = waypointStore;
@@ -70,6 +75,8 @@ class MapHandler implements OnMapReadyCallback {
 				Log.d(LOG_TAG, "Long click!");
 			}
 		});
+
+		redrawWaypoints();
 	}
 
 	void toggleMapDisplay() {
@@ -99,6 +106,18 @@ class MapHandler implements OnMapReadyCallback {
 		if (bundle != null && bundle.containsKey(MAP_MODE_KEY)) {
 			mapMode = (MapMode) bundle.get(MAP_MODE_KEY);
 		}
+
+		if (theMap != null) {
+			switch (mapMode) {
+				case STAMEN:
+					switchToStamenMap();
+					break;
+
+				case GOOGLE:
+					switchToGoogleMap();
+					break;
+			}
+		}
 	}
 
 	private void confirmAddWaypoint(final LatLng latLng) {
@@ -113,6 +132,7 @@ class MapHandler implements OnMapReadyCallback {
 				.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog, int whichButton) {
 						waypointStore.addWaypoint(latLng);
+						redrawWaypoints();
 					}})
 				.setNegativeButton(android.R.string.no, null).show();
 	}
@@ -141,5 +161,17 @@ class MapHandler implements OnMapReadyCallback {
 		if (tileOverlay != null) {
 			tileOverlay.remove();
 		}
+	}
+
+	void redrawWaypoints() {
+		theMap.clear();
+
+		PolylineOptions options = new PolylineOptions().color(Color.RED);
+		for (LatLng latLng : waypointStore.getWaypoints()) {
+			options.add(latLng);
+		}
+
+		polyline = theMap.addPolyline(options);
+		polyline.setZIndex(1000);
 	}
 }
