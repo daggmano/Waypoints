@@ -16,6 +16,8 @@ public class MainActivity extends AppCompatActivity {
 
 	private final String LOG_TAG = MainActivity.class.getSimpleName();
 
+	private final int EDIT_WAYPOINTS_REQUEST = 1;
+
 	private MapHandler mapHandler;
 	private WaypointStore waypointStore;
 
@@ -78,6 +80,16 @@ public class MainActivity extends AppCompatActivity {
 		waypointStore.saveState(bundle);
 		intent.putExtra(WaypointsActivity.EXTRA_WAYPOINTS, bundle);
 
-		startActivityForResult(intent, 0);
+		startActivityForResult(intent, EDIT_WAYPOINTS_REQUEST);
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == EDIT_WAYPOINTS_REQUEST) {
+			if (resultCode == RESULT_OK) {
+				Bundle bundle = data.getBundleExtra(WaypointsActivity.EXTRA_WAYPOINTS);
+				waypointStore.restoreState(bundle);
+			}
+		}
 	}
 }

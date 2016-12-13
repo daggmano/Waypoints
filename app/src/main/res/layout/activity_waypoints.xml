@@ -17,10 +17,41 @@
 		android:theme="@style/ThemeOverlay.AppCompat.ActionBar"
 		app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
-	<ListView
-		android:id="@+id/list"
-		android:layout_below="@+id/toolbar"
+	<LinearLayout
+		android:id="@+id/buttons"
+		android:layout_alignParentBottom="true"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"/>
+		android:layout_height="wrap_content">
+
+		<Button
+			android:id="@+id/btn_cancel"
+			android:layout_weight="1"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			style="?android:buttonBarButtonStyle"
+			android:background="@android:color/holo_red_dark"
+			android:textStyle="bold"
+			android:textColor="@android:color/white"
+			android:text="@string/cancel"/>
+
+		<Button
+			android:id="@+id/btn_accept"
+			android:layout_weight="1"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			style="?android:buttonBarButtonStyle"
+			android:background="@android:color/holo_green_dark"
+			android:textStyle="bold"
+			android:textColor="@android:color/white"
+			android:text="@string/accept"/>
+
+	</LinearLayout>
+
+	<android.support.v7.widget.RecyclerView
+		android:id="@+id/waypoints_recycler_view"
+		android:layout_below="@+id/toolbar"
+		android:layout_above="@+id/buttons"
+	    android:layout_width="match_parent"
+	    android:layout_height="match_parent" />
 
 </RelativeLayout>

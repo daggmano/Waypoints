@@ -1,19 +1,26 @@
 package au.com.criterionsoftware.waypoints;
 
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.Toast;
+import android.widget.Button;
 
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
-import java.util.Locale;
+import java.util.Collections;
 
 public class WaypointsActivity extends AppCompatActivity {
 
@@ -23,6 +30,10 @@ public class WaypointsActivity extends AppCompatActivity {
 	static final String EXTRA_WAYPOINTS = "waypointsBundle";
 
 	private ArrayList<LatLng> waypoints;
+	private RecyclerView recyclerView;
+	private WaypointsAdapter waypointsAdapter;
+
+	private Paint paint = new Paint();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -44,25 +55,81 @@ public class WaypointsActivity extends AppCompatActivity {
 			waypoints = new ArrayList<>();
 		}
 
+		waypointsAdapter = new WaypointsAdapter(waypoints);
 
-		ArrayList<String> sa = new ArrayList<>();
-		int i = 1;
-		for (LatLng latLng : waypoints) {
-			sa.add(String.format(Locale.getDefault(), "%d. %f, %f", i++, latLng.latitude, latLng.longitude));
-		}
+		recyclerView = (RecyclerView) findViewById(R.id.waypoints_recycler_view);
+		recyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+		recyclerView.setAdapter(waypointsAdapter);
+		recyclerView.setHasFixedSize(true);
 
-		ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, sa);
-		ListView lv = (ListView)findViewById(R.id.list);
-		lv.setAdapter(adapter);
-		lv.setOnItemClickListener(new AdapterView.OnItemClickListener()
-		{
+		ItemTouchHelper.Callback callback = new ItemTouchHelper.Callback() {
 			@Override
-			public void onItemClick(AdapterView<?> a, View v, int position, long id)
-			{
-				Toast.makeText(getBaseContext(), "Click, position = " + position, Toast.LENGTH_LONG).show();
+			public int getMovementFlags(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
+				return makeMovementFlags(ItemTouchHelper.UP | ItemTouchHelper.DOWN, ItemTouchHelper.LEFT);
+			}
+
+			@Override
+			public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+				Collections.swap(waypoints, viewHolder.getAdapterPosition(), target.getAdapterPosition());
+				waypointsAdapter.notifyItemMoved(viewHolder.getAdapterPosition(), target.getAdapterPosition());
+				return true;
+			}
+
+			@Override
+			public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+				waypoints.remove(viewHolder.getAdapterPosition());
+				waypointsAdapter.notifyItemRemoved(viewHolder.getAdapterPosition());
+			}
+
+			@Override
+			public void onChildDraw(Canvas c, RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
+				Bitmap icon;
+				if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+					View itemView = viewHolder.itemView;
+					float height = (float) itemView.getBottom() - (float) itemView.getTop();
+					float width = height / 3;
+
+					if (dX < 0) {
+						paint.setColor(Color.parseColor("#d32f2f"));
+						RectF background = new RectF((float) itemView.getRight() + dX, (float) itemView.getTop(), (float) itemView.getRight(), (float) itemView.getBottom());
+						c.drawRect(background, paint);
+
+						icon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_delete_white);
+						RectF icon_dest = new RectF((float) itemView.getRight() - 2 * width, (float) itemView.getTop() + width, (float) itemView.getRight() - width, (float) itemView.getBottom() - width);
+						c.drawBitmap(icon, null, icon_dest, paint);
+					}
+				}
+
+				super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+			}
+		};
+
+		ItemTouchHelper itemTouchHelper = new ItemTouchHelper(callback);
+		itemTouchHelper.attachToRecyclerView(recyclerView);
+
+		Button btnCancel = (Button) findViewById(R.id.btn_cancel);
+		Button btnAccept = (Button) findViewById(R.id.btn_accept);
+
+		btnCancel.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				setResult(RESULT_CANCELED);
+				finish();
 			}
 		});
 
+		btnAccept.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				Intent intent = new Intent();
+				Bundle bundle = new Bundle();
+				bundle.putParcelableArrayList(WaypointStore.WAYPOINT_KEY, waypoints);
+				intent.putExtra(WaypointsActivity.EXTRA_WAYPOINTS, bundle);
+
+				setResult(RESULT_OK, intent);
+				finish();
+			}
+		});
 	}
 
 	@Override
