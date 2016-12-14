@@ -5,7 +5,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,7 +14,6 @@ import android.widget.TextView;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 
-import java.util.ArrayList;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements OnShowWaypointDetail {
@@ -30,7 +28,6 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 	private CardView waypointInfoCard;
 	private TextView waypointInfoTitle;
 	private TextView waypointInfoDetail;
-	private Button waypointInfoDelete;
 
 	private int waypointInfoIndex;
 
@@ -47,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 		waypointInfoCard = (CardView) findViewById(R.id.waypoint_info_card);
 		waypointInfoTitle = (TextView) findViewById(R.id.waypoint_info_title);
 		waypointInfoDetail = (TextView) findViewById(R.id.waypoint_info_detail);
-		waypointInfoDelete = (Button) findViewById(R.id.waypoint_info_delete);
+		Button waypointInfoDelete = (Button) findViewById(R.id.waypoint_info_delete);
 
 		waypointInfoDelete.setOnClickListener(new View.OnClickListener() {
 			@Override
