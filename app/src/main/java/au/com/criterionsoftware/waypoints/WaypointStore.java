@@ -27,6 +27,10 @@ public class WaypointStore {
 		waypoints.add(latLng);
 	}
 
+	void insertWaypoint(LatLng latLng, int index) {
+		waypoints.add(index + 1, latLng);
+	}
+
 	void saveState(Bundle bundle) {
 		bundle.putParcelableArrayList(WAYPOINT_KEY, waypoints);
 	}
