@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,7 +17,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements OnShowWaypointDetail {
+public class MainActivity extends AppCompatActivity implements OnShowWaypointDetail, OnWaypointSummaryChanged {
 
 	private final String LOG_TAG = MainActivity.class.getSimpleName();
 
@@ -24,6 +25,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 
 	private MapHandler mapHandler;
 	private WaypointStore waypointStore;
+
+	private TextView toolbarInfo;
 
 	private CardView waypointInfoCard;
 	private TextView waypointInfoTitle;
@@ -38,6 +41,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 
 		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
+
+		toolbarInfo = (TextView) findViewById(R.id.toolbar_info);
 
 		waypointInfoIndex = -1;
 
@@ -58,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 			}
 		});
 
-		waypointStore = new WaypointStore();
+		waypointStore = new WaypointStore(this);
 		mapHandler = new MapHandler(this, waypointStore, this);
 
 		// Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -139,5 +144,11 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 		} else {
 			return false;
 		}
+	}
+
+	@Override
+	public void onWaypointSummaryChange(int waypointCount, int distance) {
+		float km = (float) distance / 1000;
+		toolbarInfo.setText(String.format(Locale.getDefault(), "%d points, %.2f km", waypointCount, km));
 	}
 }
