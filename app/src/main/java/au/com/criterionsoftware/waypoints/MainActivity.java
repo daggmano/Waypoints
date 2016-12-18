@@ -30,7 +30,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 
 	private CardView waypointInfoCard;
 	private TextView waypointInfoTitle;
-	private TextView waypointInfoDetail;
+	private TextView waypointInfoName;
+	private TextView waypointInfoLatLng;
 
 	private int waypointInfoIndex;
 
@@ -48,7 +49,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 
 		waypointInfoCard = (CardView) findViewById(R.id.waypoint_info_card);
 		waypointInfoTitle = (TextView) findViewById(R.id.waypoint_info_title);
-		waypointInfoDetail = (TextView) findViewById(R.id.waypoint_info_detail);
+		waypointInfoName = (TextView) findViewById(R.id.waypoint_info_name);
+		waypointInfoLatLng = (TextView) findViewById(R.id.waypoint_info_latlng);
 		Button waypointInfoDelete = (Button) findViewById(R.id.waypoint_info_delete);
 
 		waypointInfoDelete.setOnClickListener(new View.OnClickListener() {
@@ -128,10 +130,11 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 	}
 
 	@Override
-	public void onShowWaypointDetail(int index, LatLng latLng) {
+	public void onShowWaypointDetail(int index, String name, LatLng latLng) {
 		waypointInfoIndex = index;
 		waypointInfoTitle.setText(String.format(Locale.getDefault(), "WAYPOINT %d", (index + 1)));
-		waypointInfoDetail.setText(String.format(Locale.getDefault(), "Lat / Lng: %f / %f", latLng.latitude, latLng.longitude));
+		waypointInfoName.setText(name);
+		waypointInfoLatLng.setText(String.format(Locale.getDefault(), "Lat / Lng: %f / %f", latLng.latitude, latLng.longitude));
 		waypointInfoCard.setVisibility(View.VISIBLE);
 	}
 

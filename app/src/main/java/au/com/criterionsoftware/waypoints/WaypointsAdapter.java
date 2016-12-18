@@ -16,9 +16,9 @@ import java.util.Locale;
 
 public class WaypointsAdapter extends RecyclerView.Adapter {//implements CardView.OnLongClickListener {
 
-	private ArrayList<LatLng> waypoints;
+	private ArrayList<Waypoint> waypoints;
 
-	WaypointsAdapter(ArrayList<LatLng> waypoints) {
+	WaypointsAdapter(ArrayList<Waypoint> waypoints) {
 		this.waypoints = waypoints;
 	}
 
@@ -33,7 +33,8 @@ public class WaypointsAdapter extends RecyclerView.Adapter {//implements CardVie
 	public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
 		WaypointViewHolder viewHolder = (WaypointViewHolder) holder;
 
-		viewHolder.waypointTextView.setText(String.format(Locale.getDefault(), "%f, %f", waypoints.get(position).latitude, waypoints.get(position).longitude));
+		viewHolder.waypointNameTextView.setText(waypoints.get(position).name);
+		viewHolder.waypointLatLngTextView.setText(String.format(Locale.getDefault(), "%f, %f", waypoints.get(position).latLng.latitude, waypoints.get(position).latLng.longitude));
 	}
 
 	@Override

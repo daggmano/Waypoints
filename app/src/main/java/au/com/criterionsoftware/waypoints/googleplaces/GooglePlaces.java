@@ -140,7 +140,7 @@ public class GooglePlaces {
 	}
 
 	private void loadSupportedPlaces() {
-		mSupportedPlaces = new HashSet<String>();
+		mSupportedPlaces = new HashSet<>();
 
 		mSupportedPlaces.add("accounting");
 		mSupportedPlaces.add("airport");

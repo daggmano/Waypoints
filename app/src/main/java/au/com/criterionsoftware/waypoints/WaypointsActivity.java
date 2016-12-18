@@ -17,8 +17,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
-import com.google.android.gms.maps.model.LatLng;
-
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -29,7 +27,7 @@ public class WaypointsActivity extends AppCompatActivity {
 	private static final String WAYPOINTS_KEY = "editWaypoints";
 	static final String EXTRA_WAYPOINTS = "waypointsBundle";
 
-	private ArrayList<LatLng> waypoints;
+	private ArrayList<Waypoint> waypoints;
 	private RecyclerView recyclerView;
 	private WaypointsAdapter waypointsAdapter;
 

@@ -60,7 +60,14 @@
 				android:layout_height="wrap_content"/>
 
 			<TextView
-				android:id="@+id/waypoint_info_detail"
+				android:id="@+id/waypoint_info_name"
+				android:text=""
+				android:textColor="@android:color/white"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"/>
+
+			<TextView
+				android:id="@+id/waypoint_info_latlng"
 				android:text=""
 				android:textColor="@android:color/white"
 				android:layout_width="wrap_content"
