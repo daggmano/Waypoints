@@ -10,11 +10,13 @@ import android.widget.TextView;
 
 class WaypointViewHolder extends RecyclerView.ViewHolder {
 
-	TextView waypointTextView;
+	TextView waypointNameTextView;
+	TextView waypointLatLngTextView;
 
 	WaypointViewHolder(View itemView) {
 		super(itemView);
 
-		waypointTextView = (TextView) itemView.findViewById(R.id.waypoint_text);
+		waypointNameTextView = (TextView) itemView.findViewById(R.id.waypoint_text);
+		waypointLatLngTextView = (TextView) itemView.findViewById(R.id.waypoint_latlng);
 	}
 }

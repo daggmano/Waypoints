@@ -5,6 +5,8 @@ import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
+import android.widget.ArrayAdapter;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -26,16 +28,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import au.com.criterionsoftware.waypoints.googleplaces.models.Place;
+import au.com.criterionsoftware.waypoints.googleplaces.models.PlacesResult;
+
 /**
  * Created by darrenoster on 12/12/16.
  */
 
 interface OnShowWaypointDetail {
-	void onShowWaypointDetail(int index, LatLng latLng);
+	void onShowWaypointDetail(int index, String name, LatLng latLng);
 	boolean clearWaypointDetail();
 }
 
-class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMarkerDragListener {
+class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMarkerDragListener, OnPlaceSearcherResult {
 
 	private static final String LOG_TAG = MapHandler.class.getSimpleName();
 
@@ -189,31 +194,62 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		}
 	}
 
-	private void confirmAddInsertWaypoint(final LatLng latLng, final boolean asInsert, final int index) {
-		String title = "Confirm Action";
-		String message = String.format(Locale.getDefault(), "Do you wish to %s the following waypoint?\r\nLat: %f\r\nLng: %f", asInsert ? "insert" : "add", latLng.latitude, latLng.longitude);
+	private void confirmAddInsertWaypoint(LatLng latLng, boolean asInsert, int index) {
 
-		new AlertDialog.Builder(context)
-				.setTitle(title)
-				.setMessage(message)
-				.setIcon(android.R.drawable.ic_dialog_alert)
-				.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-					public void onClick(DialogInterface dialog, int whichButton) {
-						if (asInsert) {
-							waypointStore.insertWaypoint(latLng, index);
-						} else {
-							waypointStore.addWaypoint(latLng);
-						}
-						isInDragMode = false;
-						redrawWaypoints();
-					}})
-				.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialogInterface, int i) {
-						isInDragMode = false;
-						redrawWaypoints();
-					}
-				}).show();
+		final float tolerance = 500 * (22 - theMap.getCameraPosition().zoom);
+
+		PlaceSearcherRequest request = new PlaceSearcherRequest(latLng, (int) tolerance, asInsert, index);
+
+		new PlaceSearcher(context.getString(R.string.google_maps_key), this).execute(request);
+	}
+
+	@Override
+	public void onPlaceSearchResult(final PlacesResult placesResult, final LatLng latLng, final boolean asInsert, final int index) {
+
+		AlertDialog.Builder builderSingle = new AlertDialog.Builder(context);
+		builderSingle.setTitle("Select Point:");
+
+		final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context, android.R.layout.select_dialog_singlechoice);
+		arrayAdapter.add("Manual Selection");
+		if (placesResult != null) {
+			for (Place p : placesResult.getPlaces()) {
+				arrayAdapter.add(p.getName());
+			}
+		}
+
+		builderSingle.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				dialog.dismiss();
+				isInDragMode = false;
+				redrawWaypoints();
+			}
+		});
+
+		builderSingle.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				LatLng selectedLatLng;
+				String selectedName;
+				if (which == 0) {
+					selectedLatLng = latLng;
+					selectedName = "Manual Selection";
+				} else {
+					Place p = placesResult.getPlaces().get(which - 1);
+					selectedLatLng = new LatLng(p.getLatitude(), p.getLongitude());
+					selectedName = p.getName();
+				}
+
+				if (asInsert) {
+					waypointStore.insertWaypoint(selectedLatLng, selectedName, index);
+				} else {
+					waypointStore.addWaypoint(selectedLatLng, selectedName);
+				}
+				isInDragMode = false;
+				redrawWaypoints();
+			}
+		});
+		builderSingle.show();
 	}
 
 	private void clearPolylines() {
@@ -268,15 +304,15 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		clearPolylines();
 		clearMarkers();
 
-		LatLng[] waypoints = waypointStore.getWaypointsArray();
+		Waypoint[] waypoints = waypointStore.getWaypointsArray();
 
 		mapPoints = new Marker[waypoints.length];
 
 		PolylineOptions options = new PolylineOptions().color(Color.BLUE);
 		for (int i = 0; i < waypoints.length; i++) {
-			options.add(waypoints[i]);
+			options.add(waypoints[i].latLng);
 
-			MarkerOptions markerOptions = createMarkerOptions(waypoints[i], i == 0, i == waypoints.length - 1, false);
+			MarkerOptions markerOptions = createMarkerOptions(waypoints[i].latLng, i == 0, i == waypoints.length - 1, false);
 			Marker m = theMap.addMarker(markerOptions);
 			m.setTag(i);
 
@@ -291,12 +327,13 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	public boolean onMarkerClick(Marker marker) {
 		int i = (int) marker.getTag();
 
-		onShowWaypointDetailHolder.onShowWaypointDetail(i, waypointStore.getWaypointsArray()[i]);
+		Waypoint waypoint = waypointStore.getWaypointsArray()[i];
+		onShowWaypointDetailHolder.onShowWaypointDetail(i, waypoint.name, waypoint.latLng);
 		return true;
 	}
 
 	private void findClosestSegment(LatLng latLng) {
-		LatLng[] waypoints = waypointStore.getWaypointsArray();
+		Waypoint[] waypoints = waypointStore.getWaypointsArray();
 		if (waypoints.length < 2) {
 			return;
 		}
@@ -306,8 +343,8 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		for (int i = 0; i < waypoints.length - 1; i++) {
 			List<LatLng> points = new ArrayList<>();
-			points.add(waypoints[i]);
-			points.add(waypoints[i + 1]);
+			points.add(waypoints[i].latLng);
+			points.add(waypoints[i + 1].latLng);
 			if (PolyUtil.isLocationOnPath(latLng, points, false, tolerance)) {
 				closestIndex = i;
 			}
@@ -329,9 +366,9 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	void redrawNonDragWaypoints() {
 		clearPolylines();
 
-		LatLng[] waypoints = waypointStore.getWaypointsArray();
+		Waypoint[] waypoints = waypointStore.getWaypointsArray();
 		// Set this up as we will need it shortly...
-		dragEndpoints = new LatLng[] { waypoints[dragIndex], waypoints[dragIndex + 1] };
+		dragEndpoints = new LatLng[] { waypoints[dragIndex].latLng, waypoints[dragIndex + 1].latLng };
 
 		// Do we need more than one nonDragPolyline?
 		if (dragIndex != 0 && dragIndex < waypoints.length - 2) {
@@ -346,7 +383,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		if (dragIndex > 0) {
 			PolylineOptions options = new PolylineOptions().color(Color.BLUE);
 			for (int i = 0; i <= dragIndex; i++) {
-				options.add(waypoints[i]);
+				options.add(waypoints[i].latLng);
 			}
 			nonDragPolylines[idx] = theMap.addPolyline(options);
 			nonDragPolylines[idx].setZIndex(1000);
@@ -356,7 +393,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		if (dragIndex < waypoints.length - 2) {
 			PolylineOptions options = new PolylineOptions().color(Color.BLUE);
 			for (int i = dragIndex + 1; i < waypoints.length; i++) {
-				options.add(waypoints[i]);
+				options.add(waypoints[i].latLng);
 			}
 			nonDragPolylines[idx] = theMap.addPolyline(options);
 			nonDragPolylines[idx].setZIndex(1000);
