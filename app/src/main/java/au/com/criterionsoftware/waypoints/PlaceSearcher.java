@@ -53,6 +53,7 @@ class PlaceSearcher extends AsyncTask<PlaceSearcherRequest, Void, PlacesResult> 
 
 		if (placesResult == null || placesResult.getStatusCode() != Result.StatusCode.OK) {
 			delegate.onPlaceSearchResult(null, latLng, asInsert, index);
+			return;
 		}
 		delegate.onPlaceSearchResult(placesResult, latLng, asInsert, index);
 	}
