@@ -50,9 +50,7 @@ class PlaceSearcher extends AsyncTask<PlaceSearcherRequest, Void, PlacesResult> 
 	protected PlacesResult doInBackground(PlaceSearcherRequest... requests) {
 
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-		Set<String> poiList = sharedPreferences.getStringSet("pref_poi_list", DEFAULT_POI_VALUES_SET);
-
-		Log.d(LOG_TAG, poiList.toString());
+		Set<String> poiList = sharedPreferences.getStringSet(context.getString(R.string.pref_poi_type_list), DEFAULT_POI_VALUES_SET);
 
 		for (PlaceSearcherRequest request : requests) {
 			try {
