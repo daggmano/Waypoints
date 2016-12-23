@@ -26,9 +26,10 @@ public abstract class SearchQuery extends Query {
 	}
 
 	public void addType(String type) {
+		if (mTypes.length() > 0) {
+			mTypes.append("|");
+		}
 		mTypes.append(type);
-		mTypes.append("|");
-		mTypes.deleteCharAt(mTypes.length() - 1);
 	}
 
 	@Override
