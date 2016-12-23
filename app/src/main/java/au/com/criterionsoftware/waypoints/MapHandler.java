@@ -8,10 +8,12 @@ import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -45,6 +47,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	private static final String LOG_TAG = MapHandler.class.getSimpleName();
 
 	private static final String MAP_MODE_KEY = "mapMode";
+	private static final String MAP_CAMERA_POSITION_KEY = "mapCameraPosition";
 	private static final String STAMEN_BASE_URL = "http://tile.stamen.com/watercolor/%d/%d/%d.jpg";
 
 	private Context context;
@@ -71,6 +74,8 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	private Polyline dragPolyline;
 	private Marker dragPoint;
 	private LatLng dragEndpoints[];
+
+	private CameraPosition cameraPosition = null;
 
 	MapHandler(Context context, WaypointStore waypointStore, OnShowWaypointDetail holder) {
 		this.context = context;
@@ -119,6 +124,11 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 			switchToStamenMap();
 		}
 
+		if (cameraPosition != null) {
+			theMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+			cameraPosition = null;
+		}
+
 		isInDragMode = false;
 		redrawWaypoints();
 	}
@@ -140,17 +150,30 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	}
 
 	void saveState(Bundle bundle) {
+		CameraPosition cameraPosition = theMap.getCameraPosition();
+
+		bundle.putParcelable(MAP_CAMERA_POSITION_KEY, cameraPosition);
 		bundle.putSerializable(MAP_MODE_KEY, mapMode);
 	}
 
 	void restoreState(Bundle bundle) {
 		mapMode = MapMode.GOOGLE;
+
+		if (bundle != null && bundle.containsKey(MAP_CAMERA_POSITION_KEY)) {
+			cameraPosition = (CameraPosition) bundle.getParcelable(MAP_CAMERA_POSITION_KEY);
+
+		}
+
 		if (bundle != null && bundle.containsKey(MAP_MODE_KEY)) {
 			mapMode = (MapMode) bundle.get(MAP_MODE_KEY);
 		}
 
 		if (theMap != null) {
 			switchToMapMode(mapMode);
+			if (cameraPosition != null) {
+				theMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+				cameraPosition = null;
+			}
 		}
 	}
 
