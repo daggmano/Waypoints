@@ -3,12 +3,18 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
 	<item android:title="@string/toggle_map"
-	      android:id="@+id/toggle_map"
+	      android:id="@+id/menu_toggle_map"
 	      android:icon="@android:drawable/ic_menu_mapmode"
 	      app:showAsAction="ifRoom"/>
 
 	<item android:title="@string/edit_waypoints"
-	      android:id="@+id/edit_waypoints"
+	      android:id="@+id/menu_edit_waypoints"
 	      android:icon="@android:drawable/ic_menu_compass"
 	      app:showAsAction="ifRoom"/>
+
+	<item android:title="@string/preferences"
+	      android:id="@+id/menu_preferences"
+	      android:icon="@android:drawable/ic_menu_preferences"
+	      app:showAsAction="ifRoom"/>
+
 </menu>

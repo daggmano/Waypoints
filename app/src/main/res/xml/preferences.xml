@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+	<MultiSelectListPreference
+		android:key="pref_poi_list"
+	    android:title="Points of Interest"
+	    android:summary="Waypoints will search for these types when a pin is dropped"
+	    android:entries="@array/pref_poi_list"
+	    android:entryValues="@array/pref_poi_list_values"/>
+
+</PreferenceScreen>

@@ -200,7 +200,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		PlaceSearcherRequest request = new PlaceSearcherRequest(latLng, (int) tolerance, asInsert, index);
 
-		new PlaceSearcher(context.getString(R.string.google_maps_key), this).execute(request);
+		new PlaceSearcher(context.getString(R.string.google_maps_key), this, context).execute(request);
 	}
 
 	@Override

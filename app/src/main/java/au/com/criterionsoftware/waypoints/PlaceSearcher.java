@@ -1,8 +1,17 @@
 package au.com.criterionsoftware.waypoints;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
+import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import au.com.criterionsoftware.waypoints.googleplaces.GooglePlaces;
 import au.com.criterionsoftware.waypoints.googleplaces.models.PlacesResult;
@@ -20,27 +29,38 @@ class PlaceSearcher extends AsyncTask<PlaceSearcherRequest, Void, PlacesResult> 
 
 	private final static String LOG_TAG = PlaceSearcher.class.getSimpleName();
 
+	private static final String[] DEFAULT_POI_VALUES = new String[] { "airport" };
+	private static final Set<String> DEFAULT_POI_VALUES_SET = new HashSet<>(Arrays.asList(DEFAULT_POI_VALUES));
+
 	private GooglePlaces googlePlaces;
 	private OnPlaceSearcherResult delegate;
+	private Context context;
 
 	private LatLng latLng;
 	private boolean asInsert;
 	private int index;
 
-	PlaceSearcher(String googleMapsKey, OnPlaceSearcherResult delegate) {
+	PlaceSearcher(String googleMapsKey, OnPlaceSearcherResult delegate, Context context) {
 		googlePlaces = new GooglePlaces(googleMapsKey);
 		this.delegate = delegate;
+		this.context = context;
 	}
 
 	@Override
 	protected PlacesResult doInBackground(PlaceSearcherRequest... requests) {
+
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+		Set<String> poiList = sharedPreferences.getStringSet("pref_poi_list", DEFAULT_POI_VALUES_SET);
+
+		Log.d(LOG_TAG, poiList.toString());
+
 		for (PlaceSearcherRequest request : requests) {
 			try {
 				latLng = request.latLng;
 				asInsert = request.asInsert;
 				index = request.index;
 
-				return googlePlaces.getPlaces("airport", request.tolerance, request.latLng.latitude, request.latLng.longitude);
+				return googlePlaces.getPlaces(new ArrayList<>(poiList), request.tolerance, request.latLng.latitude, request.latLng.longitude);
 			} catch (Exception e) {
 			}
 		}
