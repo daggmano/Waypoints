@@ -2,13 +2,15 @@ package au.com.criterionsoftware.waypoints;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.ArrayAdapter;
 
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -87,7 +89,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	public void onMapReady(GoogleMap googleMap) {
 		theMap = googleMap;
 
-		// Add a marker in Sydney and move the camera
+		// Add a ic_marker in Sydney and move the camera
 		LatLng adl = new LatLng(-34.9285, 138.6007);
 		theMap.moveCamera(CameraUpdateFactory.newLatLngZoom(adl, 9.0f));
 
@@ -306,16 +308,24 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	}
 
 	private MarkerOptions createMarkerOptions(LatLng latLng, boolean isStart, boolean isEnd, boolean isDrag) {
-		float markerColor = BitmapDescriptorFactory.HUE_BLUE;
+		Paint paint = new Paint();
+		paint.setStyle(Paint.Style.FILL);
+		paint.setAntiAlias(true);
 		if (isStart) {
-			markerColor = BitmapDescriptorFactory.HUE_GREEN;
+			paint.setColor(Color.GREEN);
 		} else if (isEnd) {
-			markerColor = BitmapDescriptorFactory.HUE_RED;
+			paint.setColor(Color.RED);
 		} else if (isDrag) {
-			markerColor = BitmapDescriptorFactory.HUE_YELLOW;
+			paint.setColor(Color.YELLOW);
+		} else {
+			paint.setColor(Color.BLUE);
 		}
 
-		MarkerOptions options = new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.defaultMarker(markerColor));
+		Bitmap bitmap = Bitmap.createBitmap(60, 60, Bitmap.Config.ARGB_8888);
+		Canvas canvas = new Canvas(bitmap);
+		canvas.drawCircle(30, 30, 30, paint);
+
+		MarkerOptions options = new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(bitmap)).anchor(0.5f, 0.5f);
 		if (isDrag) {
 			options.draggable(true);
 		}
