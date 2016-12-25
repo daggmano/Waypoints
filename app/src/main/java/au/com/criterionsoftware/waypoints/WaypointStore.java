@@ -108,7 +108,7 @@ class WaypointStore {
 		return waypoints.toArray(result);
 	}
 
-	private void updateSummary() {
+	void updateSummary() {
 		if (waypoints.size() < 2) {
 			delegate.onWaypointSummaryChange(waypoints.size(), 0);
 		}

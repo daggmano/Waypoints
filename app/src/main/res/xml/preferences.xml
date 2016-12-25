@@ -8,4 +8,11 @@
 	    android:entries="@array/pref_poi_list"
 	    android:entryValues="@array/pref_poi_list_values"/>
 
+	<ListPreference
+		android:key="@string/pref_dist_list"
+	    android:title="Distance Markers"
+	    android:summary="Markers will be shown at this interval"
+	    android:entries="@array/pref_dist_list"
+	    android:entryValues="@array/pref_dist_list_values"/>
+
 </PreferenceScreen>

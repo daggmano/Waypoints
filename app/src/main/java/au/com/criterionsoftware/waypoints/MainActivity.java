@@ -1,6 +1,8 @@
 package au.com.criterionsoftware.waypoints;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
@@ -74,6 +76,17 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 
 		waypointStore.restoreState(savedInstanceState);
 		mapHandler.restoreState(savedInstanceState);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		if (mapHandler != null) {
+			mapHandler.redrawWaypoints();
+		}
+		if (waypointStore != null) {
+			waypointStore.updateSummary();
+		}
 	}
 
 	@Override
@@ -155,7 +168,33 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 
 	@Override
 	public void onWaypointSummaryChange(int waypointCount, int distance) {
-		float km = (float) distance / 1000;
-		toolbarInfo.setText(String.format(Locale.getDefault(), "%d points, %.2f km", waypointCount, km));
+
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+		String distString = sharedPreferences.getString(getString(R.string.pref_dist_list), "km");
+
+		float distValue = 0f;
+		String units = "";
+
+		switch (distString) {
+			case "km":
+				distValue = 1000f;
+				units = "km";
+				break;
+			case "mi":
+				distValue = 1609.34f;
+				units = "mi";
+				break;
+			case "nm":
+				distValue = 1852f;
+				units = "NM";
+				break;
+		}
+
+		if (distValue == 0) {
+			toolbarInfo.setText(String.format(Locale.getDefault(), "%d points", waypointCount));
+		} else {
+			float dist = (float) distance / distValue;
+			toolbarInfo.setText(String.format(Locale.getDefault(), "%d points, %.2f %s", waypointCount, dist, units));
+		}
 	}
 }

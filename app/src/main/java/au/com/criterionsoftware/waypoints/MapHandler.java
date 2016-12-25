@@ -2,11 +2,13 @@ package au.com.criterionsoftware.waypoints;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -25,6 +27,7 @@ import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.UrlTileProvider;
 import com.google.maps.android.PolyUtil;
+import com.google.maps.android.SphericalUtil;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -68,6 +71,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 	private Polyline polyline;
 	private Marker mapPoints[];
+	private Marker distPoints[];
 
 	private boolean isInDragMode;
 	private int dragIndex;
@@ -305,28 +309,53 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 			dragPoint.remove();
 			dragPoint = null;
 		}
+		if (distPoints != null) {
+			for (Marker m : distPoints) {
+				m.remove();
+			}
+			distPoints = null;
+		}
 	}
 
-	private MarkerOptions createMarkerOptions(LatLng latLng, boolean isStart, boolean isEnd, boolean isDrag) {
+	private enum MarkerType {
+		NORMAL,
+		START,
+		END,
+		DRAG,
+		DISTANCE
+	}
+
+	private MarkerOptions createMarkerOptions(LatLng latLng, MarkerType type) {
 		Paint paint = new Paint();
 		paint.setStyle(Paint.Style.FILL);
 		paint.setAntiAlias(true);
-		if (isStart) {
-			paint.setColor(Color.GREEN);
-		} else if (isEnd) {
-			paint.setColor(Color.RED);
-		} else if (isDrag) {
-			paint.setColor(Color.YELLOW);
-		} else {
-			paint.setColor(Color.BLUE);
+		int size = 60;
+
+		switch (type) {
+			case NORMAL:
+				paint.setColor(Color.BLUE);
+				break;
+			case START:
+				paint.setColor(Color.GREEN);
+				break;
+			case END:
+				paint.setColor(Color.RED);
+				break;
+			case DRAG:
+				paint.setColor(Color.YELLOW);
+				break;
+			case DISTANCE:
+				paint.setColor(Color.BLUE);
+				size = 20;
+				break;
 		}
 
-		Bitmap bitmap = Bitmap.createBitmap(60, 60, Bitmap.Config.ARGB_8888);
+		Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
 		Canvas canvas = new Canvas(bitmap);
-		canvas.drawCircle(30, 30, 30, paint);
+		canvas.drawCircle(size / 2, size / 2, size / 2, paint);
 
 		MarkerOptions options = new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromBitmap(bitmap)).anchor(0.5f, 0.5f);
-		if (isDrag) {
+		if (type == MarkerType.DRAG) {
 			options.draggable(true);
 		}
 
@@ -334,6 +363,11 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	}
 
 	void redrawWaypoints() {
+
+		if (waypointStore == null || theMap == null) {
+			return;
+		}
+
 		clearPolylines();
 		clearMarkers();
 
@@ -345,7 +379,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		for (int i = 0; i < waypoints.length; i++) {
 			options.add(waypoints[i].latLng);
 
-			MarkerOptions markerOptions = createMarkerOptions(waypoints[i].latLng, i == 0, i == waypoints.length - 1, false);
+			MarkerOptions markerOptions = createMarkerOptions(waypoints[i].latLng, (i == 0) ? MarkerType.START : ((i == waypoints.length - 1) ? MarkerType.END : MarkerType.NORMAL));
 			Marker m = theMap.addMarker(markerOptions);
 			m.setTag(i);
 
@@ -354,6 +388,58 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		polyline = theMap.addPolyline(options);
 		polyline.setZIndex(1000);
+
+		addMilestones(waypoints);
+	}
+
+	private void addMilestones(Waypoint[] waypoints) {
+
+		ArrayList<Marker> distMarkers = new ArrayList<>();
+
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+		String distString = sharedPreferences.getString(context.getString(R.string.pref_dist_list), "km");
+		float dist = 0f;
+		switch (distString) {
+			case "km":
+				dist = 1000f;
+				break;
+			case "mi":
+				dist = 1609.34f;
+				break;
+			case "nm":
+				dist = 1852f;
+				break;
+		}
+
+		if (dist == 0) {
+			return;
+		}
+
+		double offset = 0;
+
+		for (int i = 1; i < waypoints.length; i++) {
+			LatLng start = waypoints[i - 1].latLng;
+			LatLng end = waypoints[i].latLng;
+			double segmentLengthM = SphericalUtil.computeDistanceBetween(start, end);
+			double segmentLength = segmentLengthM / dist;
+
+			double deltaLat = (end.latitude - start.latitude) / segmentLength;
+			double deltaLng = (end.longitude - start.longitude) / segmentLength;
+
+			int steps = (int)Math.ceil(segmentLength);
+			offset = segmentLength - (dist * (steps - 1));
+
+			Log.d(LOG_TAG, "Offset = " + offset);
+
+			for (int j = 1; j < steps; j++) {
+				LatLng pt = new LatLng(start.latitude + (deltaLat * j), start.longitude + (deltaLng * j));
+				MarkerOptions markerOptions = createMarkerOptions(pt, MarkerType.DISTANCE);
+				distMarkers.add(theMap.addMarker(markerOptions));
+			}
+		}
+
+		distPoints = new Marker[distMarkers.size()];
+		distPoints = distMarkers.toArray(distPoints);
 	}
 
 	@Override
@@ -440,7 +526,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		dragPolyline = theMap.addPolyline(options);
 		dragPolyline.setZIndex(1000);
 
-		MarkerOptions markerOptions = createMarkerOptions(latLng, false, false, true);
+		MarkerOptions markerOptions = createMarkerOptions(latLng, MarkerType.DRAG);
 
 		dragPoint = theMap.addMarker(markerOptions);
 	}

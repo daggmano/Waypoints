@@ -185,4 +185,18 @@
 		<item>veterinary_care</item>
 		<item>zoo</item>
 	</string-array>
+
+	<string-array name="pref_dist_list">
+		<item>Do not display</item>
+		<item>Kilometres</item>
+		<item>Miles</item>
+		<item>Nautical Miles</item>
+	</string-array>
+
+	<string-array name="pref_dist_list_values">
+		<item>no</item>
+		<item>km</item>
+		<item>mi</item>
+		<item>nm</item>
+	</string-array>
 </resources>
