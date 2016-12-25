@@ -420,22 +420,46 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		for (int i = 1; i < waypoints.length; i++) {
 			LatLng start = waypoints[i - 1].latLng;
 			LatLng end = waypoints[i].latLng;
+
 			double segmentLengthM = SphericalUtil.computeDistanceBetween(start, end);
+
+			if (offset > 0) {
+				double firstSegmentM = dist - offset;
+
+				if (firstSegmentM > segmentLengthM) {
+					offset = firstSegmentM - segmentLengthM;
+					start = end;
+					segmentLengthM = 0;
+				} else {
+					double firstLat = (((end.latitude - start.latitude) / segmentLengthM) * firstSegmentM) + start.latitude;
+					double firstLng = (((end.longitude - start.longitude) / segmentLengthM) * firstSegmentM) + start.longitude;
+
+					LatLng firstPt = new LatLng(firstLat, firstLng);
+					MarkerOptions firstOptions = createMarkerOptions(firstPt, MarkerType.DISTANCE);
+					distMarkers.add(theMap.addMarker(firstOptions));
+
+					start = firstPt;
+					segmentLengthM = SphericalUtil.computeDistanceBetween(start, end);
+				}
+			}
+
 			double segmentLength = segmentLengthM / dist;
 
 			double deltaLat = (end.latitude - start.latitude) / segmentLength;
 			double deltaLng = (end.longitude - start.longitude) / segmentLength;
 
 			int steps = (int)Math.ceil(segmentLength);
-			offset = segmentLength - (dist * (steps - 1));
 
-			Log.d(LOG_TAG, "Offset = " + offset);
+			// first step should be reduced by offset meters.
+			Log.d(LOG_TAG, "Offset = " + offset + " (SLM: " + segmentLengthM + ",SL: " + segmentLength + ", D: " + dist + ", S: " + steps + ")");
 
 			for (int j = 1; j < steps; j++) {
 				LatLng pt = new LatLng(start.latitude + (deltaLat * j), start.longitude + (deltaLng * j));
 				MarkerOptions markerOptions = createMarkerOptions(pt, MarkerType.DISTANCE);
 				distMarkers.add(theMap.addMarker(markerOptions));
 			}
+
+			offset = dist * (steps - segmentLength);
 		}
 
 		distPoints = new Marker[distMarkers.size()];
@@ -484,6 +508,13 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 	void redrawNonDragWaypoints() {
 		clearPolylines();
+
+		if (distPoints != null) {
+			for (Marker m : distPoints) {
+				m.remove();
+			}
+			distPoints = null;
+		}
 
 		Waypoint[] waypoints = waypointStore.getWaypointsArray();
 		// Set this up as we will need it shortly...
