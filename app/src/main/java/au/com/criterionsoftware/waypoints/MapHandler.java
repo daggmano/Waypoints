@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.v4.content.res.TypedArrayUtils;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.ArrayAdapter;
@@ -333,7 +334,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		switch (type) {
 			case NORMAL:
-				paint.setColor(Color.BLUE);
+				paint.setColor(Color.LTGRAY);
 				break;
 			case START:
 				paint.setColor(Color.GREEN);
@@ -415,21 +416,41 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 			return;
 		}
 
-		double offset = 0;
+		double remainder = 0;
 
 		for (int i = 1; i < waypoints.length; i++) {
 			LatLng start = waypoints[i - 1].latLng;
 			LatLng end = waypoints[i].latLng;
 
 			double segmentLengthM = SphericalUtil.computeDistanceBetween(start, end);
+			double segmentLength = segmentLengthM / dist;
 
-			if (offset > 0) {
+			CalculatePointsResult pointsResult = DistanceBlipCalculator.calculatePoints(segmentLength, remainder);
+			remainder = pointsResult.remainder;
+
+			Log.d(LOG_TAG, "Points:");
+			for (double p : pointsResult.points) {
+				Log.d(LOG_TAG, "    " + p);
+			}
+			Log.d(LOG_TAG, "New Remainder: " + remainder);
+
+			double latFactor = (end.latitude - start.latitude) / segmentLength;
+			double lngFactor = (end.longitude - start.longitude) /segmentLength;
+
+			for (double point : pointsResult.points) {
+				double lat = start.latitude + (latFactor * point);
+				double lng = start.longitude + (lngFactor * point);
+
+				LatLng latLng = new LatLng(lat, lng);
+				MarkerOptions markerOptions = createMarkerOptions(latLng, MarkerType.DISTANCE);
+				distMarkers.add(theMap.addMarker(markerOptions));
+			}
+/*			if (offset > 0) {
 				double firstSegmentM = dist - offset;
 
 				if (firstSegmentM > segmentLengthM) {
 					offset = firstSegmentM - segmentLengthM;
-					start = end;
-					segmentLengthM = 0;
+					continue;
 				} else {
 					double firstLat = (((end.latitude - start.latitude) / segmentLengthM) * firstSegmentM) + start.latitude;
 					double firstLng = (((end.longitude - start.longitude) / segmentLengthM) * firstSegmentM) + start.longitude;
@@ -450,16 +471,13 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 			int steps = (int)Math.ceil(segmentLength);
 
-			// first step should be reduced by offset meters.
-			Log.d(LOG_TAG, "Offset = " + offset + " (SLM: " + segmentLengthM + ",SL: " + segmentLength + ", D: " + dist + ", S: " + steps + ")");
-
 			for (int j = 1; j < steps; j++) {
 				LatLng pt = new LatLng(start.latitude + (deltaLat * j), start.longitude + (deltaLng * j));
 				MarkerOptions markerOptions = createMarkerOptions(pt, MarkerType.DISTANCE);
 				distMarkers.add(theMap.addMarker(markerOptions));
 			}
 
-			offset = dist * (steps - segmentLength);
+			offset = dist * (steps - segmentLength);*/
 		}
 
 		distPoints = new Marker[distMarkers.size()];
