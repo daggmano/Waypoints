@@ -67,6 +67,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	private TileOverlay tileOverlay;
 
 	private OnShowWaypointDetail onShowWaypointDetailHolder;
+	private SearchingOverlayControl searchingOverlayControl;
 
 	private enum MapMode {
 		GOOGLE, STAMEN
@@ -88,10 +89,11 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 	private CameraPosition cameraPosition = null;
 
-	MapHandler(Context context, WaypointStore waypointStore, OnShowWaypointDetail holder) {
+	MapHandler(Context context, WaypointStore waypointStore, OnShowWaypointDetail holder, SearchingOverlayControl overlayControl) {
 		this.context = context;
 		this.waypointStore = waypointStore;
 		this.onShowWaypointDetailHolder = holder;
+		this.searchingOverlayControl = overlayControl;
 	}
 
 	@Override
@@ -234,11 +236,15 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		PlaceSearcherRequest request = new PlaceSearcherRequest(latLng, (int) tolerance, asInsert, index);
 
+		searchingOverlayControl.showSearchingOverlay();
+
 		new PlaceSearcher(context.getString(R.string.google_maps_key), this, context).execute(request);
 	}
 
 	@Override
 	public void onPlaceSearchResult(PlacesResult placesResult, LatLng latLng, final boolean asInsert, final int index) {
+
+		searchingOverlayControl.hideSearchingOverlay();
 
 		AlertDialog.Builder builderSingle = new AlertDialog.Builder(context);
 		builderSingle.setTitle("Select Point:");

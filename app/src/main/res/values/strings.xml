@@ -6,6 +6,8 @@
 	<string name="edit_waypoints">Edit Waypoints</string>
 	<string name="preferences">Preferences</string>
 
+	<string name="searching">Searching...</string>
+
 	<string name="accept">Accept</string>
 	<string name="cancel">Cancel</string>
 	<string name="remove">Remove</string>

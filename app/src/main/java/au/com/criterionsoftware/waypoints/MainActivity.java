@@ -19,7 +19,12 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements OnShowWaypointDetail, OnWaypointSummaryChanged {
+interface SearchingOverlayControl {
+	void showSearchingOverlay();
+	void hideSearchingOverlay();
+}
+
+public class MainActivity extends AppCompatActivity implements OnShowWaypointDetail, OnWaypointSummaryChanged, SearchingOverlayControl {
 
 	private final String LOG_TAG = MainActivity.class.getSimpleName();
 
@@ -35,6 +40,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 	private TextView waypointInfoName;
 	private TextView waypointInfoLatLng;
 
+	private View searchingOverlay;
+
 	private int waypointInfoIndex;
 
 	@Override
@@ -48,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 		toolbarInfo = (TextView) findViewById(R.id.toolbar_info);
 
 		waypointInfoIndex = -1;
+
+		searchingOverlay = findViewById(R.id.searching_view);
 
 		waypointInfoCard = (CardView) findViewById(R.id.waypoint_info_card);
 		waypointInfoTitle = (TextView) findViewById(R.id.waypoint_info_title);
@@ -68,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 		});
 
 		waypointStore = new WaypointStore(this);
-		mapHandler = new MapHandler(this, waypointStore, this);
+		mapHandler = new MapHandler(this, waypointStore, this, this);
 
 		// Obtain the SupportMapFragment and get notified when the map is ready to be used.
 		SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
@@ -196,5 +205,15 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 			float dist = (float) distance / distValue;
 			toolbarInfo.setText(String.format(Locale.getDefault(), "%d points, %.2f %s", waypointCount, dist, units));
 		}
+	}
+
+	@Override
+	public void showSearchingOverlay() {
+		searchingOverlay.setVisibility(View.VISIBLE);
+	}
+
+	@Override
+	public void hideSearchingOverlay() {
+		searchingOverlay.setVisibility(View.GONE);
 	}
 }

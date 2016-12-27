@@ -90,4 +90,33 @@
 
 	</android.support.v7.widget.CardView>
 
+	<FrameLayout
+		android:id="@+id/searching_view"
+		android:visibility="gone"
+		android:background="#a0ffffff"
+		android:layout_alignParentStart="true"
+		android:layout_alignParentLeft="true"
+		android:layout_alignParentTop="true"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent">
+
+		<FrameLayout
+			android:layout_gravity="center"
+			android:background="@drawable/searching_border"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content">
+
+			<TextView
+				android:text="@string/searching"
+				android:textAppearance="@android:style/TextAppearance.DeviceDefault.SearchResult.Title"
+				android:textStyle="italic"
+				android:textColor="@android:color/black"
+				android:padding="8dp"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"/>
+
+		</FrameLayout>
+
+	</FrameLayout>
+
 </RelativeLayout>
