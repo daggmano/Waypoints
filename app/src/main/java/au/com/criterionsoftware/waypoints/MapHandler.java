@@ -482,7 +482,13 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 	@Override
 	public boolean onMarkerClick(Marker marker) {
-		int i = (int) marker.getTag();
+
+		Object o = marker.getTag();
+		if (o == null) {
+			return true;
+		}
+
+		int i = (int) o;
 
 		Waypoint waypoint = waypointStore.getWaypointsArray()[i];
 		onShowWaypointDetailHolder.onShowWaypointDetail(i, waypoint.name, waypoint.latLng);
