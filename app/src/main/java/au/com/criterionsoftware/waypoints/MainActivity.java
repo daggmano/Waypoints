@@ -1,8 +1,12 @@
 package au.com.criterionsoftware.waypoints;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
@@ -28,7 +32,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 
 	private final String LOG_TAG = MainActivity.class.getSimpleName();
 
-	private final int EDIT_WAYPOINTS_REQUEST = 1;
+	private final int EDIT_WAYPOINTS_REQUEST = 1001;
+	private final int PERMISSIONS_REQUEST = 1002;
 
 	private MapHandler mapHandler;
 	private WaypointStore waypointStore;
@@ -88,6 +93,19 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 	}
 
 	@Override
+	protected void onStart() {
+		checkLocationPermissions();
+		mapHandler.onStart();
+		super.onStart();
+	}
+
+	@Override
+	protected void onStop() {
+		mapHandler.onStop();
+		super.onStop();
+	}
+
+	@Override
 	protected void onResume() {
 		super.onResume();
 		if (mapHandler != null) {
@@ -132,6 +150,21 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 		waypointStore.saveState(outState);
 
 		super.onSaveInstanceState(outState);
+	}
+
+	private void checkLocationPermissions() {
+		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+			String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION};
+			ActivityCompat.requestPermissions(this, permissions, PERMISSIONS_REQUEST);
+		}
+	}
+
+	@Override
+	public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+		if (requestCode == PERMISSIONS_REQUEST) {
+			Log.d(LOG_TAG, "Permissions request returned...");
+		}
 	}
 
 	private void editWaypoints() {

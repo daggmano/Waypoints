@@ -120,4 +120,8 @@ class WaypointStore {
 
 		delegate.onWaypointSummaryChange(waypoints.size(), (int) totalDistance);
 	}
+
+	boolean isEmpty() {
+		return waypoints.isEmpty();
+	}
 }

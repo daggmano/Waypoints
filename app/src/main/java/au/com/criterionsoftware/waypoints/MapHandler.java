@@ -1,23 +1,33 @@
 package au.com.criterionsoftware.waypoints;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.location.Location;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -52,7 +62,7 @@ interface OnShowWaypointDetail {
 	boolean clearWaypointDetail();
 }
 
-class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMarkerDragListener, OnPlaceSearcherResult {
+class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMarkerDragListener, OnPlaceSearcherResult, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
 	private static final String LOG_TAG = MapHandler.class.getSimpleName();
 
@@ -65,6 +75,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 	private GoogleMap theMap;
 	private TileOverlay tileOverlay;
+	private GoogleApiClient googleApiClient;
 
 	private OnShowWaypointDetail onShowWaypointDetailHolder;
 	private SearchingOverlayControl searchingOverlayControl;
@@ -94,6 +105,14 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		this.waypointStore = waypointStore;
 		this.onShowWaypointDetailHolder = holder;
 		this.searchingOverlayControl = overlayControl;
+
+		if (googleApiClient == null) {
+			googleApiClient = new GoogleApiClient.Builder(context)
+					.addConnectionCallbacks(this)
+					.addOnConnectionFailedListener(this)
+					.addApi(LocationServices.API)
+					.build();
+		}
 	}
 
 	@Override
@@ -144,6 +163,26 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		isInDragMode = false;
 		redrawWaypoints();
+
+		getCurrentLocation();
+	}
+
+	void onStart() {
+		googleApiClient.connect();
+	}
+
+	void onStop() {
+		googleApiClient.disconnect();
+	}
+
+	@Nullable
+	private Location getCurrentLocation() {
+		if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+			theMap.setMyLocationEnabled(true);
+			return LocationServices.FusedLocationApi.getLastLocation(googleApiClient);
+		}
+
+		return null;
 	}
 
 	void toggleMapDisplay() {
@@ -307,14 +346,56 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 				if (asInsert) {
 					waypointStore.insertWaypoint(item.getLatLng(), item.getTitle(), index);
+					isInDragMode = false;
+					redrawWaypoints();
 				} else {
-					waypointStore.addWaypoint(item.getLatLng(), item.getTitle());
+					if (waypointStore.isEmpty()) {
+						Location location = getCurrentLocation();
+						if (location == null) {
+							waypointStore.addWaypoint(item.getLatLng(), item.getTitle());
+							isInDragMode = false;
+							redrawWaypoints();
+						} else {
+							addOrDirectTo(item.getLatLng(), item.getTitle(), location);
+						}
+					} else {
+						waypointStore.addWaypoint(item.getLatLng(), item.getTitle());
+						isInDragMode = false;
+						redrawWaypoints();
+					}
 				}
+			}
+		});
+		builderSingle.show();
+	}
+
+	private void addOrDirectTo(final LatLng latLng, final String title, final Location currentLocation) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(context);
+
+		final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(context, android.R.layout.select_dialog_singlechoice);
+		arrayAdapter.add("Add as first point");
+		arrayAdapter.add("Route from current position");
+
+		builder.setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				switch (which) {
+					case 0:
+						waypointStore.addWaypoint(latLng, title);
+						break;
+
+					case 1:
+						waypointStore.addWaypoint(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), "Current Location");
+						waypointStore.addWaypoint(latLng, title);
+						break;
+				}
+
 				isInDragMode = false;
 				redrawWaypoints();
 			}
 		});
-		builderSingle.show();
+
+		builder.show();
 	}
 
 	private void clearPolylines() {
@@ -612,6 +693,21 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	@Override
 	public void onMarkerDragEnd(Marker marker) {
 		confirmAddInsertWaypoint(marker.getPosition(), true, dragIndex);
+	}
+
+	@Override
+	public void onConnected(@Nullable Bundle bundle) {
+
+	}
+
+	@Override
+	public void onConnectionSuspended(int i) {
+
+	}
+
+	@Override
+	public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
 	}
 }
 
