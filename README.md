@@ -8,5 +8,6 @@ Demonstrates the following features:
 5. Clicking a waypoint displays details of the selected point and allows deletion.
 6. Waypoints may be reordered and deleted from a separate screen (accessible via toolbar menu item).  Swipe to delete, long-click and drag to reorder.
 7. Waypoints may be inserted by long-clicking on a wayline.  The newly inserted point may then (via a long-click-drag) be dragged to a new location. (Note: this can be tricky...)
+8. Upon initial waypoint selection, if device permissions allow, current location may be used as initial waypoint.
 
 More features to come...
