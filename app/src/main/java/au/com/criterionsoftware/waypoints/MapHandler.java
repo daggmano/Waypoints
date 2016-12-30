@@ -70,6 +70,10 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 	private static final String MAP_CAMERA_POSITION_KEY = "mapCameraPosition";
 	private static final String STAMEN_BASE_URL = "http://tile.stamen.com/watercolor/%d/%d/%d.jpg";
 
+	private static final int POLYLINE_Z_INDEX = 1000;
+	private static final int WAYPOINT_Z_INDEX = 1100;
+	private static final int BLIP_Z_INDEX = 900;
+
 	private Context context;
 	private WaypointStore waypointStore;
 
@@ -476,6 +480,12 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 			options.draggable(true);
 		}
 
+		if (type == MarkerType.DISTANCE) {
+			options.zIndex(BLIP_Z_INDEX);
+		} else {
+			options.zIndex(WAYPOINT_Z_INDEX);
+		}
+
 		return options;
 	}
 
@@ -504,7 +514,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		}
 
 		polyline = theMap.addPolyline(options);
-		polyline.setZIndex(1000);
+		polyline.setZIndex(POLYLINE_Z_INDEX);
 
 		addMilestones(waypoints);
 	}
@@ -637,7 +647,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 				options.add(waypoints[i].latLng);
 			}
 			nonDragPolylines[idx] = theMap.addPolyline(options);
-			nonDragPolylines[idx].setZIndex(1000);
+			nonDragPolylines[idx].setZIndex(POLYLINE_Z_INDEX);
 			idx++;
 		}
 
@@ -647,7 +657,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 				options.add(waypoints[i].latLng);
 			}
 			nonDragPolylines[idx] = theMap.addPolyline(options);
-			nonDragPolylines[idx].setZIndex(1000);
+			nonDragPolylines[idx].setZIndex(POLYLINE_Z_INDEX);
 		}
 	}
 
@@ -656,7 +666,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 				.color(Color.YELLOW)
 				.add(dragEndpoints[0], latLng, dragEndpoints[1]);
 		dragPolyline = theMap.addPolyline(options);
-		dragPolyline.setZIndex(1000);
+		dragPolyline.setZIndex(POLYLINE_Z_INDEX);
 
 		MarkerOptions markerOptions = createMarkerOptions(latLng, MarkerType.DRAG);
 
@@ -677,7 +687,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 				.add(dragEndpoints[0], latLng, dragEndpoints[1]);
 
 		dragPolyline = theMap.addPolyline(options);
-		dragPolyline.setZIndex(1000);
+		dragPolyline.setZIndex(POLYLINE_Z_INDEX);
 	}
 
 	@Override
