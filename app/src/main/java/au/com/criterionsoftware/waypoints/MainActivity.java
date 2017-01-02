@@ -2,9 +2,7 @@ package au.com.criterionsoftware.waypoints;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -48,6 +46,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 	private View searchingOverlay;
 
 	private int waypointInfoIndex;
+
+	//<editor-fold desc="Lifecycle methods">
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -152,6 +152,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 		super.onSaveInstanceState(outState);
 	}
 
+	//</editor-fold>
+
 	private void checkLocationPermissions() {
 		if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
@@ -188,6 +190,8 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 		}
 	}
 
+	//<editor-fold desc="OnShowWaypointDetail">
+
 	@Override
 	public void onShowWaypointDetail(int index, String name, LatLng latLng) {
 		waypointInfoIndex = index;
@@ -208,37 +212,26 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 		}
 	}
 
+	//</editor-fold>
+
+	//<editor-fold desc="OnWaypointSummaryChanged">
+
 	@Override
 	public void onWaypointSummaryChange(int waypointCount, int distance) {
 
-		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-		String distString = sharedPreferences.getString(getString(R.string.pref_dist_list), "km");
+		DistanceUnit distanceUnit = DistanceUnit.getValue(this);
 
-		float distValue = 0f;
-		String units = "";
-
-		switch (distString) {
-			case "km":
-				distValue = 1000f;
-				units = "km";
-				break;
-			case "mi":
-				distValue = 1609.34f;
-				units = "mi";
-				break;
-			case "nm":
-				distValue = 1852f;
-				units = "NM";
-				break;
-		}
-
-		if (distValue == 0) {
+		if (distanceUnit.getMetricLength() == 0) {
 			toolbarInfo.setText(String.format(Locale.getDefault(), "%d points", waypointCount));
 		} else {
-			float dist = (float) distance / distValue;
-			toolbarInfo.setText(String.format(Locale.getDefault(), "%d points, %.2f %s", waypointCount, dist, units));
+			float dist = (float) distance / distanceUnit.getMetricLength();
+			toolbarInfo.setText(String.format(Locale.getDefault(), "%d points, %.2f %s", waypointCount, dist, distanceUnit.getUnitText()));
 		}
 	}
+
+	//</editor-fold>
+
+	//<editor-fold desc="SearchingOverlayControl">
 
 	@Override
 	public void showSearchingOverlay() {
@@ -249,4 +242,6 @@ public class MainActivity extends AppCompatActivity implements OnShowWaypointDet
 	public void hideSearchingOverlay() {
 		searchingOverlay.setVisibility(View.GONE);
 	}
+
+	//</editor-fold>
 }

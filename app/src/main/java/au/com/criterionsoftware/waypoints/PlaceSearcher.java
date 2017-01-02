@@ -29,9 +29,6 @@ class PlaceSearcher extends AsyncTask<PlaceSearcherRequest, Void, PlacesResult> 
 
 	private final static String LOG_TAG = PlaceSearcher.class.getSimpleName();
 
-	private static final String[] DEFAULT_POI_VALUES = new String[] { "airport" };
-	private static final Set<String> DEFAULT_POI_VALUES_SET = new HashSet<>(Arrays.asList(DEFAULT_POI_VALUES));
-
 	private GooglePlaces googlePlaces;
 	private OnPlaceSearcherResult delegate;
 	private Context context;
@@ -50,7 +47,9 @@ class PlaceSearcher extends AsyncTask<PlaceSearcherRequest, Void, PlacesResult> 
 	protected PlacesResult doInBackground(PlaceSearcherRequest... requests) {
 
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-		Set<String> poiList = sharedPreferences.getStringSet(context.getString(R.string.pref_poi_type_list), DEFAULT_POI_VALUES_SET);
+
+		final Set<String> defaultPoiValues = new HashSet<>(Arrays.asList(context.getResources().getStringArray(R.array.default_pref_poi_values)));
+		Set<String> poiList = sharedPreferences.getStringSet(context.getString(R.string.pref_poi_type_list), defaultPoiValues);
 
 		for (PlaceSearcherRequest request : requests) {
 			try {

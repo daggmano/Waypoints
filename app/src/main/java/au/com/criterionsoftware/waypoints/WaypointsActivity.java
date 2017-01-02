@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.support.v7.app.AppCompatActivity;
@@ -88,7 +87,7 @@ public class WaypointsActivity extends AppCompatActivity {
 					float width = height / 3;
 
 					if (dX < 0) {
-						paint.setColor(Color.parseColor("#d32f2f"));
+						paint.setColor(getResources().getColor(R.color.colorDeleteRed));
 						RectF background = new RectF((float) itemView.getRight() + dX, (float) itemView.getTop(), (float) itemView.getRight(), (float) itemView.getBottom());
 						c.drawRect(background, paint);
 

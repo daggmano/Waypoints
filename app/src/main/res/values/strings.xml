@@ -14,4 +14,6 @@
 
 	<string name="pref_poi_type_list">pref_poi_list</string>
 	<string name="pref_dist_list">pref_dist_list</string>
+
+	<string name="default_pref_dist_list">km</string>
 </resources>

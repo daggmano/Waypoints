@@ -1,10 +1,8 @@
 package au.com.criterionsoftware.waypoints;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -12,18 +10,12 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.location.Location;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
-import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -119,6 +111,48 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		}
 	}
 
+	//<editor-fold desc="Lifecycle methods">
+
+	void onStart() {
+		googleApiClient.connect();
+	}
+
+	void onStop() {
+		googleApiClient.disconnect();
+	}
+
+	void saveState(Bundle bundle) {
+		CameraPosition cameraPosition = theMap.getCameraPosition();
+
+		bundle.putParcelable(MAP_CAMERA_POSITION_KEY, cameraPosition);
+		bundle.putSerializable(MAP_MODE_KEY, mapMode);
+	}
+
+	void restoreState(Bundle bundle) {
+		mapMode = MapMode.GOOGLE;
+
+		if (bundle != null && bundle.containsKey(MAP_CAMERA_POSITION_KEY)) {
+			cameraPosition = (CameraPosition) bundle.getParcelable(MAP_CAMERA_POSITION_KEY);
+
+		}
+
+		if (bundle != null && bundle.containsKey(MAP_MODE_KEY)) {
+			mapMode = (MapMode) bundle.get(MAP_MODE_KEY);
+		}
+
+		if (theMap != null) {
+			switchToMapMode(mapMode);
+			if (cameraPosition != null) {
+				theMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+				cameraPosition = null;
+			}
+		}
+	}
+
+	//</editor-fold>
+
+	//<editor-fold desc="OnMapReadyCallback">
+
 	@Override
 	public void onMapReady(GoogleMap googleMap) {
 		theMap = googleMap;
@@ -171,13 +205,182 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		getCurrentLocation();
 	}
 
-	void onStart() {
-		googleApiClient.connect();
+	//</editor-fold>
+
+	//<editor-fold desc="OnPlaceSearcherResult">
+
+	@Override
+	public void onPlaceSearchResult(PlacesResult placesResult, LatLng latLng, final boolean asInsert, final int index) {
+
+		searchingOverlayControl.hideSearchingOverlay();
+
+		AlertDialog.Builder builderSingle = new AlertDialog.Builder(context);
+		builderSingle.setTitle("Select Point:");
+
+		final ArrayList<PlaceResultChoiceItem> items = new ArrayList<>();
+		items.add(new PlaceResultChoiceItem("Manual Selection", latLng, ""));
+		if (placesResult != null) {
+
+			DistanceUnit distanceUnit = DistanceUnit.getValue(context);
+
+			for (Place p : placesResult.getPlaces()) {
+
+				LatLng thisLatLng = new LatLng(p.getLatitude(), p.getLongitude());
+				if (distanceUnit.getMetricLength() != 0) {
+					double dist = SphericalUtil.computeDistanceBetween(thisLatLng, latLng);
+
+					dist = dist / distanceUnit.getMetricLength();
+
+					items.add(new PlaceResultChoiceItem(p.getName(), thisLatLng, String.format(Locale.getDefault(), "%.2f %s away", dist, distanceUnit.getUnitText())));
+				} else {
+					items.add(new PlaceResultChoiceItem(p.getName(), thisLatLng, ""));
+				}
+			}
+		}
+
+		PlaceResultAdapter adapter = new PlaceResultAdapter(items, context);
+
+		builderSingle.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				dialog.dismiss();
+				isInDragMode = false;
+				redrawWaypoints();
+			}
+		});
+
+		builderSingle.setAdapter(adapter, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				PlaceResultChoiceItem item = items.get(which);
+
+				if (asInsert) {
+					waypointStore.insertWaypoint(item.getLatLng(), item.getTitle(), index);
+					isInDragMode = false;
+					redrawWaypoints();
+				} else {
+					if (waypointStore.isEmpty()) {
+						Location location = getCurrentLocation();
+						if (location == null) {
+							waypointStore.addWaypoint(item.getLatLng(), item.getTitle());
+							isInDragMode = false;
+							redrawWaypoints();
+						} else {
+							addOrDirectTo(item.getLatLng(), item.getTitle(), location);
+						}
+					} else {
+						waypointStore.addWaypoint(item.getLatLng(), item.getTitle());
+						isInDragMode = false;
+						redrawWaypoints();
+					}
+				}
+			}
+		});
+		builderSingle.show();
 	}
 
-	void onStop() {
-		googleApiClient.disconnect();
+	//</editor-fold>
+
+	//<editor-fold desc="Clear waylines and markers">
+
+	private void clearPolylines() {
+		if (polyline != null) {
+			polyline.remove();
+			polyline = null;
+		}
+		if (nonDragPolylines != null) {
+			for (Polyline p : nonDragPolylines) {
+				p.remove();
+			}
+			nonDragPolylines = null;
+		}
+		if (dragPolyline != null) {
+			dragPolyline.remove();
+			dragPolyline = null;
+		}
 	}
+
+	private void clearMarkers() {
+		if (mapPoints != null) {
+			for (Marker m : mapPoints) {
+				m.remove();
+			}
+			mapPoints = null;
+		}
+		if (dragPoint != null) {
+			dragPoint.remove();
+			dragPoint = null;
+		}
+		if (distPoints != null) {
+			for (Marker m : distPoints) {
+				m.remove();
+			}
+			distPoints = null;
+		}
+	}
+
+	//</editor-fold>
+
+	//<editor-fold desc="OnMarkerClickListener">
+
+	@Override
+	public boolean onMarkerClick(Marker marker) {
+
+		Object o = marker.getTag();
+		if (o == null) {
+			return true;
+		}
+
+		int i = (int) o;
+
+		Waypoint waypoint = waypointStore.getWaypointsArray()[i];
+		onShowWaypointDetailHolder.onShowWaypointDetail(i, waypoint.name, waypoint.latLng);
+		return true;
+	}
+
+	//</editor-fold>
+
+	//<editor-fold desc="OnMarkerDragListener">
+
+	@Override
+	public void onMarkerDragStart(Marker marker) {
+
+	}
+
+	@Override
+	public void onMarkerDrag(Marker marker) {
+		redrawDragWaypoints(marker.getPosition());
+	}
+
+	@Override
+	public void onMarkerDragEnd(Marker marker) {
+		confirmAddInsertWaypoint(marker.getPosition(), true, dragIndex);
+	}
+
+	//</editor-fold>
+
+	//<editor-fold desc="ConnectionCallbacks">
+
+	@Override
+	public void onConnected(@Nullable Bundle bundle) {
+
+	}
+
+	@Override
+	public void onConnectionSuspended(int i) {
+
+	}
+
+	//</editor-fold>
+
+	//<editor-fold desc="OnConnectionFailedListener">
+
+	@Override
+	public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+	}
+
+	//</editor-fold>
 
 	@Nullable
 	private Location getCurrentLocation() {
@@ -202,34 +405,6 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 			case STAMEN:
 				switchToMapMode(MapMode.GOOGLE);
 				break;
-		}
-	}
-
-	void saveState(Bundle bundle) {
-		CameraPosition cameraPosition = theMap.getCameraPosition();
-
-		bundle.putParcelable(MAP_CAMERA_POSITION_KEY, cameraPosition);
-		bundle.putSerializable(MAP_MODE_KEY, mapMode);
-	}
-
-	void restoreState(Bundle bundle) {
-		mapMode = MapMode.GOOGLE;
-
-		if (bundle != null && bundle.containsKey(MAP_CAMERA_POSITION_KEY)) {
-			cameraPosition = (CameraPosition) bundle.getParcelable(MAP_CAMERA_POSITION_KEY);
-
-		}
-
-		if (bundle != null && bundle.containsKey(MAP_MODE_KEY)) {
-			mapMode = (MapMode) bundle.get(MAP_MODE_KEY);
-		}
-
-		if (theMap != null) {
-			switchToMapMode(mapMode);
-			if (cameraPosition != null) {
-				theMap.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
-				cameraPosition = null;
-			}
 		}
 	}
 
@@ -284,95 +459,6 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		new PlaceSearcher(context.getString(R.string.google_maps_key), this, context).execute(request);
 	}
 
-	@Override
-	public void onPlaceSearchResult(PlacesResult placesResult, LatLng latLng, final boolean asInsert, final int index) {
-
-		searchingOverlayControl.hideSearchingOverlay();
-
-		AlertDialog.Builder builderSingle = new AlertDialog.Builder(context);
-		builderSingle.setTitle("Select Point:");
-
-		final ArrayList<PlaceResultChoiceItem> items = new ArrayList<>();
-		items.add(new PlaceResultChoiceItem("Manual Selection", latLng, ""));
-		if (placesResult != null) {
-
-			SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-			String distString = sharedPreferences.getString(context.getString(R.string.pref_dist_list), "km");
-
-			float distValue = 0f;
-			String units = "";
-
-			switch (distString) {
-				case "km":
-					distValue = 1000f;
-					units = "km";
-					break;
-				case "mi":
-					distValue = 1609.34f;
-					units = "mi";
-					break;
-				case "nm":
-					distValue = 1852f;
-					units = "NM";
-					break;
-			}
-
-			for (Place p : placesResult.getPlaces()) {
-
-				LatLng thisLatLng = new LatLng(p.getLatitude(), p.getLongitude());
-				if (distValue != 0) {
-					double dist = SphericalUtil.computeDistanceBetween(thisLatLng, latLng);
-
-					dist = dist / distValue;
-
-					items.add(new PlaceResultChoiceItem(p.getName(), thisLatLng, String.format(Locale.getDefault(), "%.2f %s away", dist, units)));
-				} else {
-					items.add(new PlaceResultChoiceItem(p.getName(), thisLatLng, ""));
-				}
-			}
-		}
-
-		PlaceResultAdapter adapter = new PlaceResultAdapter(items, context);
-
-		builderSingle.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				dialog.dismiss();
-				isInDragMode = false;
-				redrawWaypoints();
-			}
-		});
-
-		builderSingle.setAdapter(adapter, new DialogInterface.OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				PlaceResultChoiceItem item = items.get(which);
-
-				if (asInsert) {
-					waypointStore.insertWaypoint(item.getLatLng(), item.getTitle(), index);
-					isInDragMode = false;
-					redrawWaypoints();
-				} else {
-					if (waypointStore.isEmpty()) {
-						Location location = getCurrentLocation();
-						if (location == null) {
-							waypointStore.addWaypoint(item.getLatLng(), item.getTitle());
-							isInDragMode = false;
-							redrawWaypoints();
-						} else {
-							addOrDirectTo(item.getLatLng(), item.getTitle(), location);
-						}
-					} else {
-						waypointStore.addWaypoint(item.getLatLng(), item.getTitle());
-						isInDragMode = false;
-						redrawWaypoints();
-					}
-				}
-			}
-		});
-		builderSingle.show();
-	}
-
 	private void addOrDirectTo(final LatLng latLng, final String title, final Location currentLocation) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(context);
 
@@ -400,42 +486,6 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		});
 
 		builder.show();
-	}
-
-	private void clearPolylines() {
-		if (polyline != null) {
-			polyline.remove();
-			polyline = null;
-		}
-		if (nonDragPolylines != null) {
-			for (Polyline p : nonDragPolylines) {
-				p.remove();
-			}
-			nonDragPolylines = null;
-		}
-		if (dragPolyline != null) {
-			dragPolyline.remove();
-			dragPolyline = null;
-		}
-	}
-
-	private void clearMarkers() {
-		if (mapPoints != null) {
-			for (Marker m : mapPoints) {
-				m.remove();
-			}
-			mapPoints = null;
-		}
-		if (dragPoint != null) {
-			dragPoint.remove();
-			dragPoint = null;
-		}
-		if (distPoints != null) {
-			for (Marker m : distPoints) {
-				m.remove();
-			}
-			distPoints = null;
-		}
 	}
 
 	private enum MarkerType {
@@ -523,22 +573,9 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		ArrayList<Marker> distMarkers = new ArrayList<>();
 
-		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-		String distString = sharedPreferences.getString(context.getString(R.string.pref_dist_list), "km");
-		float dist = 0f;
-		switch (distString) {
-			case "km":
-				dist = 1000f;
-				break;
-			case "mi":
-				dist = 1609.34f;
-				break;
-			case "nm":
-				dist = 1852f;
-				break;
-		}
+		DistanceUnit distanceUnit = DistanceUnit.getValue(context);
 
-		if (dist == 0) {
+		if (distanceUnit.getMetricLength() == 0) {
 			return;
 		}
 
@@ -549,7 +586,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 			LatLng end = waypoints[i].latLng;
 
 			double segmentLengthM = SphericalUtil.computeDistanceBetween(start, end);
-			double segmentLength = segmentLengthM / dist;
+			double segmentLength = segmentLengthM / distanceUnit.getMetricLength();
 
 			CalculatePointsResult pointsResult = DistanceBlipCalculator.calculatePoints(segmentLength, remainder);
 			remainder = pointsResult.remainder;
@@ -569,21 +606,6 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		distPoints = new Marker[distMarkers.size()];
 		distPoints = distMarkers.toArray(distPoints);
-	}
-
-	@Override
-	public boolean onMarkerClick(Marker marker) {
-
-		Object o = marker.getTag();
-		if (o == null) {
-			return true;
-		}
-
-		int i = (int) o;
-
-		Waypoint waypoint = waypointStore.getWaypointsArray()[i];
-		onShowWaypointDetailHolder.onShowWaypointDetail(i, waypoint.name, waypoint.latLng);
-		return true;
 	}
 
 	private void findClosestSegment(LatLng latLng) {
@@ -617,7 +639,7 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 		initDragWaypoints(latLng);
 	}
 
-	void redrawNonDragWaypoints() {
+	private void redrawNonDragWaypoints() {
 		clearPolylines();
 
 		if (distPoints != null) {
@@ -688,123 +710,5 @@ class MapHandler implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener,
 
 		dragPolyline = theMap.addPolyline(options);
 		dragPolyline.setZIndex(POLYLINE_Z_INDEX);
-	}
-
-	@Override
-	public void onMarkerDragStart(Marker marker) {
-
-	}
-
-	@Override
-	public void onMarkerDrag(Marker marker) {
-		redrawDragWaypoints(marker.getPosition());
-	}
-
-	@Override
-	public void onMarkerDragEnd(Marker marker) {
-		confirmAddInsertWaypoint(marker.getPosition(), true, dragIndex);
-	}
-
-	@Override
-	public void onConnected(@Nullable Bundle bundle) {
-
-	}
-
-	@Override
-	public void onConnectionSuspended(int i) {
-
-	}
-
-	@Override
-	public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-	}
-}
-
-class PlaceResultChoiceItem {
-	private String _title;
-	private LatLng _latLng;
-	private String _distance;
-
-	PlaceResultChoiceItem(String title, LatLng latLng, String distance) {
-		_title = title;
-		_latLng = latLng;
-		_distance = distance;
-	}
-
-	String getTitle() {
-		return _title;
-	}
-
-	LatLng getLatLng() {
-		return _latLng;
-	}
-
-	String getLatLngString() {
-		return String.format(Locale.getDefault(), "%.6f, %.6f", _latLng.latitude, _latLng.longitude);
-	}
-
-	String getDistance() {
-		return _distance;
-	}
-}
-
-class PlaceResultAdapter extends BaseAdapter {
-
-	private ArrayList<PlaceResultChoiceItem> _data;
-	private Context _context;
-
-	PlaceResultAdapter(ArrayList<PlaceResultChoiceItem> data, Context context) {
-		_data = data;
-		_context = context;
-	}
-
-	@Override
-	public int getCount() {
-		return _data.size();
-	}
-
-	@Override
-	public Object getItem(int i) {
-		return null;
-	}
-
-	@Override
-	public long getItemId(int i) {
-		return 0;
-	}
-
-	private class ViewHolder {
-		TextView titleView;
-		TextView latLngView;
-		TextView distanceView;
-	}
-
-	@Override
-	public View getView(int position, View convertView, ViewGroup parent) {
-
-		ViewHolder viewHolder;
-
-		if (convertView == null) {
-			LayoutInflater inflater = (LayoutInflater) _context.getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-			convertView = inflater.inflate(R.layout.item_place_result, null);
-
-			viewHolder = new ViewHolder();
-			viewHolder.titleView = (TextView) convertView.findViewById(R.id.place_result_title);
-			viewHolder.latLngView = (TextView) convertView.findViewById(R.id.place_result_latlng);
-			viewHolder.distanceView = (TextView) convertView.findViewById(R.id.place_result_distance);
-
-			convertView.setTag(viewHolder);
-		} else {
-			viewHolder = (ViewHolder) convertView.getTag();
-		}
-
-		PlaceResultChoiceItem item = _data.get(position);
-
-		viewHolder.titleView.setText(item.getTitle());
-		viewHolder.latLngView.setText(item.getLatLngString());
-		viewHolder.distanceView.setText(item.getDistance());
-
-		return convertView;
 	}
 }

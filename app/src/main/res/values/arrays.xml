@@ -186,6 +186,10 @@
 		<item>zoo</item>
 	</string-array>
 
+	<string-array name="default_pref_poi_values">
+		<item>airport</item>
+	</string-array>
+
 	<string-array name="pref_dist_list">
 		<item>Do not display</item>
 		<item>Kilometres</item>
